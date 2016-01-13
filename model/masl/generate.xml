@@ -2,7 +2,8 @@
 <project name="masl" default="all" basedir=".">
   <target name="all"
           description="Generate all code for this project"
-          depends="sql,schema,java,format_java">
+          depends="sql,java,format_java">
+          <!-- depends="sql,schema,java,format_java" -->
   </target>
 
   <target name="nb_all"
@@ -40,7 +41,7 @@
   <property file="${mcj_path}/mc_java.depends" />
 
   <property name="sg.dep" value="ooa_schema.sql,schema_gen.arc" />
-  <property name="schema.output" value="metamodel_schema.sql" />
+  <property name="schema.output" value="masl_metamodel_schema.sql" />
 
   <target name="schema.depends" >
     <uptodate property="schema.buildNotNeeded" targetfile="sql/${schema.output}">
@@ -51,56 +52,42 @@
 
   <target name="schema"
           depends="schema.depends"
-          description="Generate the Ooa of ooa database schema file"
+          description="Generate the MASL database schema file"
           unless="schema.buildNotNeeded" >
     <echo >Generating ${schema.output} ...</echo>
   <ant antfile="${mcj_path}/build.xml" target="generate.schema" >
     <property name="param1" value="${sql.output}" />
     <property name="param2" value="${mcj_path}" />
     <property name="param3" value="TRUE" />
-    <property name="param4" value="ooaofgraphics" />
+    <property name="param4" value="masl" />
   </ant>
   <!-- Need to move the output file since the archetype uses the domain
        name as the base name of the output file -->
-  <move file="sql/ooaofgraphics_schema.sql" tofile="sql/${schema.output}" />
+  <move file="sql/masl_schema.sql" tofile="sql/${schema.output}" />
   </target>
 
   <property name="java.sql.dep" value="${sql.output}" />
-  <property name="java.color.dep" value="ooaofgraphics_startspec.clr,ooaofgraphics_import_spec.clr,ooaofgraphics_package_spec.clr" />
+  <property name="java.color.dep" value="" />
   <property name="java.tj.dep" value="ooa_schema.sql,${java.arc.depends}" />
 
-  <property name="java.output" value="src/org/xtuml/bp/ui/canvas/Ooaofgraphics.java" />
-
-  <property name="tree_schema.output_path" value="../org.xtuml.bp.ui.tree/sql" />
-  <property name="tree_schema.output" value="UITree_schema.sql" />
+  <property name="java.output" value="src/masl.java" />
 
   <target name="java.depends" >
     <uptodate property="java.buildNotNeeded" targetfile="${java.output}">
-       <srcfiles dir = "sql" includes = "ooaofgraphics.sql" />
+       <srcfiles dir = "sql" includes = "${sql.output}" />
        <srcfiles dir = "color"      includes = "${java.color.dep}" />
        <srcfiles dir = "${mcj_path}" includes = "${java.tj.dep}"/>
     </uptodate>
   </target>
 
-  <target name="Build_Outline.depends" >
-    <uptodate property="Build_Outline.buildNotNeeded" targetfile="${outline.output}">
-       <srcfiles dir = "${tree_schema.output_path}" includes = "${tree_schema.output}" />
-       <srcfiles dir = "../org.xtuml.bp.ui.explorer/sql" includes = "UITree.pei.sql" />
-       <srcfiles dir = "../org.xtuml.bp.core/sql" includes = "ooaofooa.sql" />
-       <srcfiles dir = "arc"        includes = "BuildOutline.arc,create_outline_sorter.inc"/>
-       <srcfiles dir = "color"      includes = "${java.color.dep}" />
-       <srcfiles dir = "${mcj_path}" includes = "${java.tj.dep}"/>
-    </uptodate>
-  </target>
-		
   <target name="java"
           depends="java.depends"
           description="Generate the MASL outline file"
           unless="java.buildNotNeeded" >
     <echo >Generating java files ...</echo>
     <ant antfile="${mcj_path}/build.xml" target="generate.java" >
-      <property name="param1" value="ooaofgraphics" />
-      <property name="param2" value="Ooaofgraphics" />
+      <property name="param1" value="masl" />
+      <property name="param2" value="Masl" />
       <property name="param3" value="${mcj_path}" />
       <property name="verify_selects" value="false" />
       <property name="mcjava.project.root" value="${basedir}"/>
