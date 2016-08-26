@@ -190,6 +190,13 @@ elif ( "event" == element )
   else
     ooapopulation.transformEvent(name:param.value[0], type:param.value[1]);
   end if;
+elif ( "exception" == element )
+  if ( "" == param.value[0] )
+    select any s_exp from instances of S_EXP where ( false );
+    ooapopulation.current_exp = s_exp;
+  else
+    ooapopulation.transformException(name:param.value[0], visibility:param.value[1] );
+  end if;
 elif ( "type" == element )
   if ( "" == param.value[0] )
   	select any s_dt from instances of S_DT where (false);
@@ -572,7 +579,7 @@ if ( self.processingProject )
   lib_pkg = self.lib_pkg;
   if ( not_empty lib_pkg )
     cl_ic = self.Package_newImportedComponent(ep_pkg:lib_pkg);
-    cl_ic.Descrip = "name:" + param.name;
+    cl_ic.Descrip = "name:" + param.name + "\n";
     cl_ic.Name = param.name;
     self.current_imported_component = cl_ic;
   end if;
@@ -794,7 +801,7 @@ end if;
 //   later, we basically just do nothing and return.',
 	1,
 	'',
-	"3ed1f3e8-afb7-40dc-a2d2-2caac1c499d4");
+	"6bbce93d-eacd-45a2-b774-1aec0c108f3e");
 INSERT INTO O_TPARM
 	VALUES ("8b0d5f6b-5fc0-48dd-b987-acc00c37c87d",
 	"8b5937f7-610b-4bd3-9fe2-8b9e795cfd80",
@@ -1648,15 +1655,24 @@ select any s_dt related by types_pkg->PE_PE[R8000]->S_DT[R8001] where (selected.
 if ( (empty sys_s_dt) and (empty s_dt) )
   // The type doesn''t already exist, create it
   self.Package_newDatatype(ep_pkg:types_pkg, type_name:param.name, definition:param.definition);
-  
-  // Cache the new type
-  select any sys_s_dt related by systypes_pkg->PE_PE[R8000]->S_DT[R8001] where (selected.Name == param.name);
-  if ( empty sys_s_dt )
-  	select any s_dt related by types_pkg->PE_PE[R8000]->S_DT[R8001] where (selected.Name == param.name);
-  	self.current_type = s_dt;
-  else
-  	self.current_type = sys_s_dt;
+else
+  // update the type definition
+  if ( "" != param.definition )
+    if ( not_empty sys_s_dt )
+	  sys_s_dt.Descrip = sys_s_dt.Descrip + "<definition>" + param.definition + "</definition>\n";
+	else
+	  s_dt.Descrip = s_dt.Descrip + "<definition>" + param.definition + "</definition>\n";
+	end if;
   end if;
+end if;
+
+// Cache the new type
+select any sys_s_dt related by systypes_pkg->PE_PE[R8000]->S_DT[R8001] where (selected.Name == param.name);
+if ( empty sys_s_dt )
+	select any s_dt related by types_pkg->PE_PE[R8000]->S_DT[R8001] where (selected.Name == param.name);
+	self.current_type = s_dt;
+else
+	self.current_type = sys_s_dt;
 end if;
 ',
 	1,
@@ -1717,7 +1733,7 @@ IDLINK::stitchID( name:param.type_name, pe_pe:pe, s_dt:dt, s_udt:udt );
 
 // For complex MASL types we store the definition in the description
 if ( "" != param.definition )
-  dt.Descrip = dt.Descrip + "<definition>" + param.definition + "</definition>";
+  dt.Descrip = dt.Descrip + "<definition>" + param.definition + "</definition>\n";
 end if;',
 	1,
 	'',
@@ -2105,7 +2121,7 @@ self.Function_initialize(s_sync:fn, name:param.function_name);
 return fn;',
 	1,
 	'',
-	"dff68b05-f692-4f7e-8745-e96def65ae8a");
+	"359c2979-2cde-487a-96f6-47f31e02b6cb");
 INSERT INTO O_TPARM
 	VALUES ("984f5127-57dd-444a-bee0-82d7dfd66060",
 	"833a364d-a80a-4900-ba69-199bd9cc4581",
@@ -6210,6 +6226,32 @@ elif ( "codeblock" == element )
   if ( not_empty c_ep )
     c_ep.Descrip = "<codeblock>" + param.value[0] + "</codeblock>";
   end if;
+elif ( "pragma" == element )
+  if ( "" == param.value[0] )
+    select any pragma from instances of ooapragma where (false);
+    ooapopulation.current_pragma = pragma;
+  else
+  	select one parent_element related by ooapopulation->ooaelement[R3801]->ooaelement[R3805.''child of''];
+  	if ( not_empty parent_element )
+      if ( ooaelement::ismarkable( type: parent_element.type ) )		// ignore pragma if we are not on a markable element
+        select one markable related by parent_element->ooamarkable[R3806];
+        ooapopulation.current_pragma = ooapragma::populate( name:value[0], list:value[1], markable:markable );
+      end if;
+  	else
+      TRACE::log( flavor:"failure", id:56, message:"Element stack is malformed." );
+      ooaelement::trace( population: ooapopulation );
+    end if;
+  end if;
+elif ( "pragmaitem" == element )
+  select one current_element related by ooapopulation->ooaelement[R3801];
+  if ( not_empty current_element )
+    if ( "pragma" == current_element.type )	// ignore if not child of pragma
+      ooapragma_item::populate( value:value[0], pragma:ooapopulation.current_pragma );
+    end if;
+  else
+    TRACE::log( flavor:"failure", id:57, message:"Element stack is malformed." );
+    ooaelement::trace( population: ooapopulation );
+  end if;
 else
   // TRACE::log( flavor:"failure", id:59, message:"maslin unrecognized element:  " + element );
 end if;
@@ -8561,6 +8603,108 @@ INSERT INTO O_TPARM
 	'',
 	"00000000-0000-0000-0000-000000000000",
 	'');
+INSERT INTO O_TFR
+	VALUES ("6bbce93d-eacd-45a2-b774-1aec0c108f3e",
+	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f",
+	'transformException',
+	'',
+	"ba5eda7a-def5-0000-0000-000000000000",
+	1,
+	'// If the exception visibility is public, put it in the package of shared public data.  If private, put it inside the component.
+lib_pkg = self.lib_pkg;
+select any types_pkg related by lib_pkg->PE_PE[R8000]->EP_PKG[R8001] where (selected.Name == "Shared");
+
+if ( "private" == param.visibility )
+  // Get the "types" package in this component
+  current_component = self.current_component;
+  select any types_pkg related by current_component->PE_PE[R8003]->EP_PKG[R8001] where (selected.Name == "types");
+
+  // Create the types package if it doesn''t already exist
+  if ( empty types_pkg )
+    types_pkg = self.Component_newPackage(c_c:current_component, pkg_name:"types");
+  end if;
+end if;
+
+// See if exception already exists
+select any s_exp related by types_pkg->PE_PE[R8000]->S_EXP[R8001] where (selected.Name == param.name);
+
+if ( empty s_exp )
+  // The exception doesn''t already exist, create it
+  s_exp = self.Package_newException(ep_pkg:types_pkg, name:param.name);
+end if;
+
+// cache the exception
+self.current_exp = s_exp;
+',
+	1,
+	'',
+	"3ed1f3e8-afb7-40dc-a2d2-2caac1c499d4");
+INSERT INTO O_TPARM
+	VALUES ("29158a1d-3422-44c2-b602-ed47ca57eadd",
+	"6bbce93d-eacd-45a2-b774-1aec0c108f3e",
+	'name',
+	"ba5eda7a-def5-0000-0000-000000000004",
+	0,
+	'',
+	"00000000-0000-0000-0000-000000000000",
+	'');
+INSERT INTO O_TPARM
+	VALUES ("e5e62d0e-dd06-44de-9991-5cb7fd4009b4",
+	"6bbce93d-eacd-45a2-b774-1aec0c108f3e",
+	'visibility',
+	"ba5eda7a-def5-0000-0000-000000000004",
+	0,
+	'',
+	"29158a1d-3422-44c2-b602-ed47ca57eadd",
+	'');
+INSERT INTO O_TFR
+	VALUES ("359c2979-2cde-487a-96f6-47f31e02b6cb",
+	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f",
+	'Package_newException',
+	'',
+	"47b02a5f-ecfb-49c6-bf1a-6e4a2ff6de02",
+	1,
+	'ep_pkg = param.ep_pkg;
+name = param.name;
+
+create object instance exp of S_EXP;
+// create Packageable Element supertype and hook up to this package.
+create object instance pe of PE_PE;
+relate exp to pe across R8001;
+relate pe to ep_pkg across R8000;
+pe.type = ElementTypeConstants::EXCEPTION;
+self.PackageableElement_initialize(pe_pe:pe);
+exp.Name = name;
+
+return exp;',
+	1,
+	'',
+	"dff68b05-f692-4f7e-8745-e96def65ae8a");
+INSERT INTO O_TPARM
+	VALUES ("912eb408-5d0f-4901-bd62-967f9eba6f23",
+	"359c2979-2cde-487a-96f6-47f31e02b6cb",
+	'ep_pkg',
+	"9939c670-a721-4742-a824-ed4b0df4acd6",
+	0,
+	'',
+	"00000000-0000-0000-0000-000000000000",
+	'');
+INSERT INTO O_TPARM
+	VALUES ("14603252-f841-42e5-817a-79b944c07f9d",
+	"359c2979-2cde-487a-96f6-47f31e02b6cb",
+	'name',
+	"ba5eda7a-def5-0000-0000-000000000004",
+	0,
+	'',
+	"912eb408-5d0f-4901-bd62-967f9eba6f23",
+	'');
+INSERT INTO S_DT_PROXY
+	VALUES ("47b02a5f-ecfb-49c6-bf1a-6e4a2ff6de02",
+	"00000000-0000-0000-0000-000000000000",
+	'inst_ref<Exception>',
+	'',
+	'',
+	'../../../../../mcooa/models/mcooa/ooaofooa/Domain/Domain.xtuml');
 INSERT INTO O_NBATTR
 	VALUES ("d14202df-9ea9-4589-a309-406b4ed0b070",
 	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f");
@@ -9012,6 +9156,24 @@ INSERT INTO O_ATTR
 	'current_event_dataitem',
 	0,
 	"9067a5b1-aa5d-499a-b13e-9bde5fc3e2cd",
+	'',
+	'');
+INSERT INTO O_NBATTR
+	VALUES ("56d7bc13-3616-4b03-b542-37bab510c37e",
+	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f");
+INSERT INTO O_BATTR
+	VALUES ("56d7bc13-3616-4b03-b542-37bab510c37e",
+	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f");
+INSERT INTO O_ATTR
+	VALUES ("56d7bc13-3616-4b03-b542-37bab510c37e",
+	"2caf6fbd-3dbc-4f0d-9fbb-834f70662a1f",
+	"7f60e0fb-00d4-450d-9815-2fe3c849f298",
+	'current_exp',
+	'',
+	'',
+	'current_exp',
+	0,
+	"47b02a5f-ecfb-49c6-bf1a-6e4a2ff6de02",
 	'',
 	'');
 INSERT INTO O_ID

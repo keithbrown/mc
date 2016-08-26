@@ -963,29 +963,22 @@ sub xtumlmc_cleanse_model($$$)
       # awk '/CREATE TABLE/{ print $3 }' | sed "s/_.*/_/" | sort | uniq
       if ( ! ( ( /^INSERT INTO ACT_/ ) ||
                 ( /^INSERT INTO A_/ ) ||
-                ( /^INSERT INTO BP_/ ) ||
                 ( /^INSERT INTO CA_/ ) ||
                 ( /^INSERT INTO CL_/ ) ||
-                ( /^INSERT INTO CN_/ ) ||
                 ( /^INSERT INTO CNST_/ ) ||
                 ( /^INSERT INTO COMM_/ ) ||
-                ( /^INSERT INTO CP_/ ) ||
-                ( /^INSERT INTO CSME_/ ) ||
                 ( /^INSERT INTO C_/ ) ||
                 ( /^INSERT INTO EP_/ ) ||
                 ( /^INSERT INTO E_/ ) ||
                 ( /^INSERT INTO IA_/ ) ||
-                ( /^INSERT INTO IP_/ ) ||
                 ( /^INSERT INTO I_/ ) ||
                 ( /^INSERT INTO L_/ ) ||
                 ( /^INSERT INTO MSG_/ ) ||
                 ( /^INSERT INTO O_/ ) ||
                 ( /^INSERT INTO PA_/ ) ||
                 ( /^INSERT INTO PE_/ ) ||
-                ( /^INSERT INTO PL_/ ) ||
                 ( /^INSERT INTO RV_/ ) ||
                 ( /^INSERT INTO R_/ ) ||
-                ( /^INSERT INTO SLD_/ ) ||
                 ( /^INSERT INTO SM_/ ) ||
                 ( /^INSERT INTO SPR_/ ) ||
                 ( /^INSERT INTO SQ_/ ) ||
@@ -1202,6 +1195,21 @@ sub xtuml2masl
     # clean up
     unlink "$i/gen/code_generation/z.xtuml";
     unlink "$i/gen/code_generation/a.xtuml";
+  }
+
+  # format MASL
+  my $masl_format_cp = join(":", glob("$masl_bin_dir/*.jar"));
+  opendir my $dh, $out_dir
+    or die "$0: opendir: $!";
+  while (defined(my $format_dir = readdir $dh)) {
+    next unless -d "$out_dir/$format_dir";
+    if ( $format_dir ne "." and $format_dir ne ".." ) {
+      move( "$out_dir/$format_dir", "$out_dir/$format_dir.orig");
+      my $format_cmd = "java -cp $masl_format_cp MaslFormatter -r -i $out_dir/$format_dir.orig -o $out_dir/$format_dir";
+      print STDERR "$format_cmd\n";
+      system( $format_cmd );
+      rmtree("$out_dir/$format_dir.orig");
+    }
   }
 
   print STDERR "Done.\n";

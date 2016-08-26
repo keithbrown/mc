@@ -265,7 +265,7 @@ typeForwardDeclaration
                                                                   args[1] = $typeVisibility.visibility;
                                                                   populate( "type", args );
                                                               }
-                                   pragmaList[""]				
+                                   pragmaList["declaration"]				
                                  )                          
                                                               {
                                                                   populate( "type", args ); // end type
@@ -369,7 +369,7 @@ structureComponentDefinition
                                    componentName
                                    typeReference
                                    expression?
-                                   pragmaList[""]
+                                   pragmaList["omit"]
                                  )                          
                               ;
 
@@ -723,7 +723,7 @@ objectDefinition
                                    | transitionTable          
                                    )*
                                    description
-                                   pragmaList["definition"]                 
+                                   pragmaList[""]                 
                                  )
                                                             {
                                                                 populate( "object", args ); // end object
@@ -969,7 +969,7 @@ transitionRow
                                    startState
                                    ( transitionOption[$startState.name]
                                    )+
-                                   pragmaList[$startState.name + "_pragmalist"]
+                                   pragmaList[$startState.name]
                                 )                           
                               ;
 
@@ -1317,19 +1317,23 @@ pragma[String list]
                               : ^( PRAGMA
                                    pragmaName               
                                                             {
-                                                                args[0] = $pragmaName.name;
-                                                                args[1] = list;
-                                                                populate( "pragma", args );
+                                                                if ( !list.equals("omit") ) {
+                                                                    args[0] = $pragmaName.name;
+                                                                    args[1] = list;
+                                                                    populate( "pragma", args );
+                                                                }
                                                             }
                                    ( pragmaValue            
                                                             {
-                                                                args[0] = $pragmaValue.value;
-                                                                populate( "pragmaitem", args );
+                                                                if ( !list.equals("omit") ) {
+                                                                    args[0] = $pragmaValue.value;
+                                                                    populate( "pragmaitem", args );
+                                                                }
                                                             } 
                                    )*
                                  )                          
                                                             {
-                                                                populate( "pragma", args ); // end pragma
+                                                                if ( !list.equals("omit") ) populate( "pragma", args ); // end pragma
                                                             }
                               ;
 
@@ -1378,6 +1382,7 @@ domainServiceDefinition//[DomainService service]
 //scope NameScope;
 
                               : ^( DOMAIN_SERVICE_DEFINITION
+                                   SERVICE_TYPE
                                    serviceVisibility
                                    domainReference
                                    serviceName
@@ -1408,6 +1413,7 @@ terminatorServiceDefinition//[DomainTerminatorService service]
 
 
                               : ^( TERMINATOR_SERVICE_DEFINITION
+                                   SERVICE_TYPE
                                    serviceVisibility
                                    domainReference
                                    terminatorName
@@ -1438,6 +1444,7 @@ terminatorServiceDefinition//[DomainTerminatorService service]
 projectTerminatorServiceDefinition//[ProjectTerminatorService service]
 //scope NameScope;
                               : ^( TERMINATOR_SERVICE_DEFINITION
+                                   SERVICE_TYPE
                                    serviceVisibility
                                    domainReference
                                    terminatorName
@@ -1471,6 +1478,7 @@ objectServiceDefinition//[ObjectService service]
 
 
                               :^( OBJECT_SERVICE_DEFINITION
+                                   SERVICE_TYPE
                                    serviceVisibility
                                    INSTANCE?
                                    fullObjectReference
@@ -1556,7 +1564,7 @@ statement
                                    | whileStatement         
                                    |                        
                                    )
-                                   pragmaList[""]               
+                                   pragmaList["omit"]               
                                  )
                               ;
 
@@ -1828,7 +1836,7 @@ variableDeclaration
                                    READONLY?
                                    typeReference
                                    expression?
-                                   pragmaList[""] )             
+                                   pragmaList["omit"] )             
                               ;
 
 
