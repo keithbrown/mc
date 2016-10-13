@@ -1108,7 +1108,7 @@ i = 0;
 for each r_part in r_parts
   select one o_obj related by r_part->R_RTO[R204]->R_OIR[R203]->O_OBJ[R201]; 
   name[i] = o_obj.Name;
-  phrase[i] = T::underscore( s:r_part.Txt_Phrs );
+  phrase[i] = r_part.Txt_Phrs;
   if ( 0 == r_part.Cond )
     cond[i] = "unconditionally";
   else
@@ -1128,7 +1128,7 @@ if ( 1 == i )
   select one r_form related by r_simp->R_FORM[R208];
   select one o_obj related by r_form->R_RGO[R205]->R_OIR[R203]->O_OBJ[R201]; 
   name[1] = o_obj.Name;
-  phrase[1] = T::underscore( s:r_form.Txt_Phrs );
+  phrase[1] = r_form.Txt_Phrs;
   if ( 0 == r_form.Cond )
     cond[1] = "unconditionally";
   else
@@ -1723,8 +1723,8 @@ select one ass_o_obj related by r_assr->R_RGO[R205]->R_OIR[R203]->O_OBJ[R201];
 
 onename = one_o_obj.Name;
 othname = oth_o_obj.Name;
-onephrase = T::underscore( s:r_aone.Txt_Phrs );
-othphrase = T::underscore( s:r_aoth.Txt_Phrs );
+onephrase = r_aone.Txt_Phrs;
+othphrase = r_aoth.Txt_Phrs;
 onecond = "conditionally";
 othcond = "conditionally";
 onemult = "many";
