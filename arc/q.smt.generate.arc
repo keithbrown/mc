@@ -15,16 +15,15 @@
 .end function
 .// --------------------------------------------------------
 .// gen for statement
-.// --------------------------------------------------------
+.// -------------------------------------------
+-------------
 .function smt_for
   .param inst_ref te_smt
   .param inst_ref act_for
   .select one te_class related by act_for->O_OBJ[R670]->TE_CLASS[R2019] where ( not selected.ExcludeFromGen )
   .if ( not_empty te_class )
-    .select any te_file from instances of TE_FILE
     .select any te_for from instances of TE_FOR
     .select one te_blk related by te_smt->TE_BLK[R2078]
-    .select any te_set from instances of TE_SET
     .select one v_var related by act_for->V_VAR[R614]
     .select one te_var related by v_var->TE_VAR[R2039]
     .select one set_v_var related by act_for->V_VAR[R652]
@@ -34,13 +33,12 @@
     .assign te_for.loop_variable = te_var.buffer
     .assign te_for.set_variable = set_te_var.buffer
     .assign ws = te_blk.indentation
-    .assign te_smt.buffer2 = ws + "end loop"
+    .assign te_smt.buffer2 = ws + "end loop;"
     .if ( te_for.isImplicit )
-      .assign d = ( ( te_for.loop_variable + " : " ) + ( te_for.class_name + ";" ) )
+      .assign d = ( ( te_for.loop_variable + " : instance of " ) + ( te_class.name + ";" ) )
       .invoke blk_declaration_append( te_blk, d )
     .end if
-    .// oal2masl:  Use MASL instead of C.
-${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
+${ws}for ${te_for.loop_variable} in ${te_for.set_variable}'elements loop
     .assign te_smt.OAL = "FOR EACH ${v_var.Name} IN ${set_v_var.Name}"
   .end if
 .end function
@@ -62,12 +60,19 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
 .function smt_if
   .param inst_ref te_smt
   .param inst_ref act_if
-  .select any te_file from instances of TE_FILE
   .select one condition_te_val related by act_if->V_VAL[R625]->TE_VAL[R2040]
+  .select one else_smt related by act_if->ACT_E[R683]
+  .select one elif_smt related by act_if->ACT_EL[R682]
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .assign te_smt.buffer2 = ws + "}"
-  .include "${te_file.arc_path}/t.smt.if.c"
+  .assign te_smt.buffer2 = ws + "end if;"
+  .if ( not_empty else_smt )
+    .assign te_smt.buffer2 = ""
+  .end if;
+  .if ( not_empty elif_smt )
+    .assign te_smt.buffer2 = ""
+  .end if;
+${ws}if ${condition_te_val.OAL} then
   .assign te_smt.OAL = "IF ( ${condition_te_val.OAL} )"
 .end function
 .// ----------------------------------------------------------
@@ -87,12 +92,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
 .function smt_while
   .param inst_ref te_smt
   .param inst_ref act_whl
-  .select any te_file from instances of TE_FILE
   .select one condition_te_val related by act_whl->V_VAL[R626]->TE_VAL[R2040]
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .assign te_smt.buffer2 = ws + "}"
-  .include "${te_file.arc_path}/t.smt.while.c"
+  .assign te_smt.buffer2 = ws + "end loop;"
+${ws}while ${condition_te_val.buffer} loop
   .assign te_smt.OAL = "WHILE ( ${condition_te_val.OAL} )"
 .end function
 .// ----------------------------------------------------------
@@ -112,13 +116,10 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
 .function smt_else
   .param inst_ref te_smt
   .param inst_ref act_e
-  .select any te_file from instances of TE_FILE
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .assign te_smt.buffer2 = ws + "}"
-  .include "${te_file.arc_path}/t.smt.else.c"
-  .// Skip tracing ELSE because it falls between } and else.
-  .//.assign te_smt.OAL = "ELSE"
+  .assign te_smt.buffer2 = ws + "end if;"
+${ws}else
   .assign te_smt.OAL = ""
 .end function
 .//
@@ -139,14 +140,15 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
 .function smt_elif
   .param inst_ref te_smt
   .param inst_ref act_el
-  .select any te_file from instances of TE_FILE
+  .select one else_smt related by act_el->ACT_IF[R682]->ACT_E[R683]
   .select one condition_te_val related by act_el->V_VAL[R659]->TE_VAL[R2040]
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .assign te_smt.buffer2 = ws + "}"
-  .include "${te_file.arc_path}/t.smt.elif.c"
-  .// Skip tracing ELIF because it falls between } and else.
-  .//.assign te_smt.OAL = "ELIF ( ${condition.OAL} )"
+  .assign te_smt.buffer2 = ws + "end if;"
+  .if ( not_empty else_smt )
+    .assign te_smt.buffer2 = ""
+  .end if
+${ws}elsif ${condition_te_val.OAL} then
   .assign te_smt.OAL = ""
 .end function
 .//
@@ -206,13 +208,13 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( 8 == r_te_dt.Core_Typ )
       .select one te_class related by root_v_val->V_IRF[R801]->V_VAR[R808]->V_INT[R814]->O_OBJ[R818]->TE_CLASS[R2019] where ( not selected.ExcludeFromGen )
       .if ( not_empty te_class )
-        .assign te_assign.left_declaration = ( te_class.GeneratedName + " * " ) + ( root_te_val.buffer + ";" )
+        .assign te_assign.left_declaration = ( root_te_val.buffer + " : " ) + ( te_class.GeneratedName + ";" )
         .invoke blk_declaration_append( te_blk, te_assign.left_declaration )
       .end if
     .elif ( ( 9 == te_assign.Core_Typ ) or ( 21 == te_assign.Core_Typ ) )
       .// First OAL use of inst_ref_set<Object> handle set. Initialize with class extent.
       .assign selection_result_variable = te_assign.lval
-      .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} * ${selection_result_variable} = &${selection_result_variable}_space;"
+      .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} : ${selection_result_variable} = &${selection_result_variable}_space;"
       .invoke blk_declaration_append( te_blk, d )
       .// Push deallocation into the block so that it is available at gen time for break/continue/return.
       .assign d = ( ( te_set.module + te_set.clear ) + ( "( " + te_assign.lval ) ) + " );"
@@ -250,7 +252,12 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
   .if ( not_empty v_pvl )
     .assign is_parameter = true
   .end if
-  .include "${te_file.arc_path}/t.smt.assign.c"
+  .// Set to lower case if boolean
+  .if ( 1 == r_te_dt.Core_Typ )
+${ws}${l_te_val.OAL} := $l{r_te_val.OAL};
+  .else
+${ws}${l_te_val.OAL} := ${r_te_val.OAL};
+  .end if
   .assign te_smt.OAL = "ASSIGN ${l_te_val.OAL} = ${r_te_val.OAL}"
 .end function
 .//
@@ -307,10 +314,10 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .invoke r = AutoInitializeUniqueIDs( te_class, te_var.buffer )
     .assign init_uniques = r.body
     .if ( act_cr.is_implicit )
-      .assign d = ( te_class.GeneratedName + " * " ) + ( te_var.buffer + ";" )
+      .assign d = ( te_var.buffer + " : instance of " ) + ( te_class.name + ";" )
       .invoke blk_declaration_append( te_blk, d )
     .end if
-    .include "${te_file.arc_path}/t.smt.create_instance.c"
+${ws}${v_var.Name} := create ${te_class.name}();
     .assign te_smt.OAL = "CREATE OBJECT INSTANCE ${v_var.Name} OF ${te_class.Key_Lett}"
   .end if
 .end function
@@ -345,7 +352,7 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .select one te_c related by te_class->TE_C[R2064]
     .invoke r = GetDomainTypeIDFromString( te_c.Name )
     .assign dom_id = r.result
-    .include "${te_file.arc_path}/t.smt.delete_instance.c"
+${ws}delete ${v_var.Name};
     .assign te_smt.OAL = "DELETE OBJECT INSTANCE ${v_var.Name}"
   .end if
 .end function
@@ -441,13 +448,18 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .if ( e_ces.is_implicit )
         .assign d = ""
         .if ( "" == parameters )
-          .assign d = ( te_eq.base_event_type + " * " ) + ( te_var.buffer + ";" )
+          .assign d = ( te_eq.base_event_type + " : " ) + ( te_var.buffer + ";" )
         .else
-          .assign d = ( te_evt.GeneratedName + " * " ) + ( te_var.buffer + ";" )
+          .assign d = ( te_evt.GeneratedName + " : " ) + ( te_var.buffer + ";" )
         .end if
         .invoke blk_declaration_append( te_blk, d )
       .end if
-      .include "${te_file.arc_path}/t.smt.create_event.c"
+.//${ws}create event instance ${v_var.Name}( ${parameter_OAL} ) to ${recipient_OAL};
+// Automatic translation of timers is not supported
+// by this version of the OAL to MASL translator.
+PARSE ERROR
+// You must manually replaces the OAL timer mechanism
+// with the MASL equivalent.
       .assign te_smt.OAL = "CREATE EVENT INSTANCE ${v_var.Name}( ${parameter_OAL} ) TO ${recipient_OAL}"
     .end if
   .end if
@@ -499,7 +511,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( "C" != te_target.language )
       .assign thismodule = ", thismodule"
     .end if
-    .include "${te_file.arc_path}/t.smt.relate.c"
+	.if (act_rel.relationship_phrase == "")
+${ws}link ${one_v_var.Name} R$t{r_rel.Numb} ${oth_v_var.Name};
+    .else
+${ws}link ${one_v_var.Name} R$t{r_rel.Numb}.$_{act_rel.relationship_phrase} ${oth_v_var.Name};
+    .end if
     .assign te_smt.OAL = "RELATE ${one_v_var.Name} TO ${oth_v_var.Name} ACROSS R$t{r_rel.Numb}"
   .end if
 .end function
@@ -571,7 +587,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( one_o_obj.Obj_ID == r_aone.Obj_ID )
       .assign left_obj_is_aone = true
     .end if
-    .include "${te_file.arc_path}/t.smt.relate_using.c"
+	.if (act_ru.relationship_phrase == "")
+${ws}link ${one_te_var.OAL} R$t{r_rel.Numb} ${oth_te_var.OAL} using ${ass_te_var.OAL};
+    .else
+${ws}link ${one_te_var.OAL} R$t{r_rel.Numb}.$_{act_ru.relationship_phrase} ${oth_te_var.OAL} using ${ass_te_var.OAL};
+    .end if
     .assign te_smt.OAL = "RELATE ${one_te_var.OAL} TO ${oth_te_var.OAL} ACROSS R$t{r_rel.Numb} USING ${ass_te_var.OAL}"
   .end if
 .end function
@@ -618,7 +638,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( "C" != te_target.language )
       .assign thismodule = ", thismodule"
     .end if
-    .include "${te_file.arc_path}/t.smt.unrelate.c"
+	.if (act_unr.relationship_phrase == "")
+${ws}unlink ${one_te_var.OAL} R$t{r_rel.Numb} ${oth_te_var.OAL};
+    .else
+${ws}unlink ${one_te_var.OAL} R$t{r_rel.Numb}.$_{act_unr.relationship_phrase} ${oth_te_var.OAL};
+    .end if
     .assign te_smt.OAL = "UNRELATE ${one_te_var.OAL} FROM ${oth_te_var.OAL} ACROSS R$t{r_rel.Numb}"
   .end if
 .end function
@@ -689,7 +713,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( one_o_obj.Obj_ID == r_aone.Obj_ID )
       .assign left_obj_is_aone = true
     .end if
-    .include "${te_file.arc_path}/t.smt.unrelate_using.c"
+	.if (act_uru.relationship_phrase == "")
+${ws}unlink ${one_te_var.OAL} R$t{r_rel.Numb} ${oth_te_var.OAL} using ${ass_te_var.OAL};
+    .else
+${ws}unlink ${one_te_var.OAL} R$t{r_rel.Numb}.$_{act_uru.relationship_phrase} ${oth_te_var.OAL} using ${ass_te_var.OAL};
+    .end if
     .assign te_smt.OAL = "UNRELATE ${one_te_var.OAL} FROM ${oth_te_var.OAL} ACROSS R$t{r_rel.Numb} USING ${ass_te_var.OAL}"
   .end if
 .end function
@@ -733,14 +761,15 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( "any" == te_select.multiplicity )
       .if ( te_select.is_implicit )
         .// Declare (first OAL usage of) inst_ref<Object> handle variable.
-        .assign d = ( te_select.class_name + " * " ) + ( te_select.var_name + "=0;" )
+        .assign d = ( te_select.var_name + " : instance of " ) + ( te_select.target_class_name + ";" )
         .invoke blk_declaration_append( te_blk, d )
       .end if
     .elif ( "many" == te_select.multiplicity )
       .if ( te_select.is_implicit )
         .// First OAL use of inst_ref_set<Object> handle set. Initialize with class extent.
         .assign selection_result_variable = te_select.var_name
-        .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} * ${selection_result_variable} = &${selection_result_variable}_space;"
+        .assign d = ( te_select.var_name + " : set of instance of " ) + ( te_select.target_class_name + ";" )
+.//        .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} : ${selection_result_variable} = &${selection_result_variable}_space;"
         .invoke blk_declaration_append( te_blk, d )
         .// Push deallocation into the block so that it is available at gen time for break/continue/return.
         .assign d = ( ( te_set.module + te_set.clear ) + ( "( " + te_select.var_name ) ) + " );"
@@ -750,7 +779,11 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .print "\nERROR:  select ${te_select.multiplicity} is not any or many."
       .exit 101
     .end if
-    .include "${te_file.arc_path}/t.smt.select.c"
+    .if ( "any" == te_select.multiplicity )
+${ws}${v_var.Name} := find_one ${te_select.target_class_name}();
+    .elif ( "many" == te_select.multiplicity )
+${ws}${v_var.Name} := find ${te_select.target_class_name}();
+    .end if
     .assign te_smt.OAL = "SELECT ${act_fio.cardinality} ${v_var.Name} FROM INSTANCES OF ${te_class.Key_Lett}"
   .end if
 .end function
@@ -841,14 +874,15 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( "any" == te_select_where.multiplicity )
       .if ( te_select_where.is_implicit )
         .// Declare (first OAL usage of) inst_ref<Object> handle variable.
-        .assign d = ( te_select_where.class_name + " * " ) + ( te_select_where.var_name + "=0;" )
+        .assign d = ( te_select_where.var_name + " : instance of " ) + ( te_class.name + ";" )
         .invoke blk_declaration_append( te_blk, d )
       .end if
     .elif ( "many" == te_select_where.multiplicity )
       .if ( te_select_where.is_implicit )
         .// First OAL usage of inst_ref_set<Object> handle set
         .assign selection_result_variable = te_select_where.var_name
-        .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} * ${selection_result_variable} = &${selection_result_variable}_space;"
+        .assign d = ( te_select_where.var_name + " : set of instance of " ) + ( te_class.name + ";" )
+.//        .assign d = "${te_set.scope}${te_set.base_class} ${selection_result_variable}_space={0}; ${te_set.scope}${te_set.base_class} : ${selection_result_variable} = &${selection_result_variable}_space;"
         .invoke blk_declaration_append( te_blk, d )
         .// Push deallocation into the block so that it is available at gen time for break/continue/return.
         .assign d = ( ( te_set.module + te_set.clear ) + ( "( " + te_select_where.var_name ) ) + " );"
@@ -868,7 +902,12 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .select one te_where related by o_id->TE_WHERE[R2032]
     .invoke r = CreateSpecialWhereComparisonArguments( te_class, o_id )
     .assign arguments = r.result
-    .include "${te_file.arc_path}/t.smt.select_where.c"
+    .if ( "any" == te_select_where.multiplicity )
+${ws}${v_var.Name} := find_one ${te_class.name} where ${where_te_val.OAL};
+    .elif ( "many" == te_select_where.multiplicity )
+${ws}${v_var.Name} := find ${te_class.name} where ${where_te_val.OAL};
+    .end if
+.//${ws}select ${act_fiw.cardinality} ${v_var.Name} from instances of ${te_class.Key_Lett} where ${where_te_val.OAL};
     .assign te_smt.OAL = "SELECT ${act_fiw.cardinality} ${v_var.Name} FROM INSTANCES OF ${te_class.Key_Lett} WHERE ${where_te_val.OAL}"
   .end if
 .end function
@@ -924,7 +963,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
   .assign self_directed = false
   .// CDS - Also may need to dig inside, get the sm_evt and then see if this
   .// event is polymorphic.
-  .include "${te_file.arc_path}/t.smt.generate_precreated_event.c"
+  .//.include "${te_file.arc_path}/t.smt.generate_precreated_event.c"
+    .// oal2masl:  Use MASL instead of OAL.
+${ws}generate ${te_val.OAL};
   .assign te_smt.OAL = "GENERATE ${te_val.OAL}"
 .end function
 .//
@@ -984,8 +1025,8 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .for each v_par in v_pars
         .select one par_te_dt related by v_par->V_VAL[R800]->S_DT[R820]->TE_DT[R2021]
         .select one par_te_val related by v_par->V_VAL[R800]->TE_VAL[R2040]
-        .invoke r = t_oal_smt_event_parameters( "", v_par.Name, par_te_val.buffer, par_te_dt.Core_Typ, te_blk.indentation )
-        .assign parameters = parameters + r.result
+        .//.invoke r = t_oal_smt_event_parameters( "", v_par.Name, par_te_val.buffer, par_te_dt.Core_Typ, te_blk.indentation )
+        .assign parameters = ( parameters + delimeter ) + par_te_val.buffer
         .assign parameter_OAL = ( parameter_OAL + delimeter ) + par_te_val.OAL
         .assign delimeter = ", "
       .end for
@@ -996,7 +1037,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .assign self_directed = true
     .end if
     .assign var_name = te_var.buffer
-    .include "${te_file.arc_path}/t.smt.generate.c"
+    .//.include "${te_file.arc_path}/t.smt.generate.c"
+    .// oal2masl:  Use MASL instead of OAL.
+${ws}generate ${te_class.Name}.${sm_evt.Mning}(${parameters}) to ${v_var.Name};
     .assign te_smt.OAL = "GENERATE ${sm_evt.Drv_Lbl}:${sm_evt.Mning}(${parameter_OAL}) TO ${v_var.Name}"
   .end if
 .end function
@@ -1017,7 +1060,7 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
   .select one te_smt related by e_gsme->E_GES[R703]->E_ESS[R701]->ACT_SMT[R603]->TE_SMT[R2038]
   .invoke r = smt_generate_class_event( te_smt, e_gsme )
   .invoke smt_buffer_append( te_smt, r.body )
-  .assign te_smt.OAL = te_smt.OAL + " CREATOR"
+.//  .assign te_smt.OAL = te_smt.OAL + " CREATOR"
 .end function
 .//
 .// --------------------------------------------------------
@@ -1083,14 +1126,17 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .for each v_par in v_pars
         .select one par_te_dt related by v_par->V_VAL[R800]->S_DT[R820]->TE_DT[R2021]
         .select one par_te_val related by v_par->V_VAL[R800]->TE_VAL[R2040]
-        .invoke r = t_oal_smt_event_parameters( "", v_par.Name, par_te_val.buffer, par_te_dt.Core_Typ, ws )
-        .assign parameters = parameters + r.result
+        .//.invoke r = t_oal_smt_event_parameters( "", v_par.Name, par_te_val.buffer, par_te_dt.Core_Typ, ws )
+        .//.assign parameters = parameters + r.result
+        .assign parameters = ( parameters + delimeter ) + par_te_val.buffer
         .assign parameter_OAL = ( parameter_OAL + delimeter ) + par_te_val.OAL
         .assign delimeter = ", "
       .end for
     .end if
     .assign var_name = "0"
-    .include "${te_file.arc_path}/t.smt.generate.c"
+    .//.include "${te_file.arc_path}/t.smt.generate.c"
+    .// oal2masl:  Use MASL instead of OAL.
+${ws}generate ${te_class.Name}:${sm_evt.Mning}(${parameters});
     .assign te_smt.OAL = "GENERATE ${sm_evt.Drv_Lbl}:${sm_evt.Mning}(${parameter_OAL}) TO ${tgt_o_obj.Key_Lett}"
   .end if
 .end function
@@ -1240,6 +1286,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( te_tfr.Instance_Based == 1 )
       .assign instance_based = true
       .assign var_name = te_var.buffer
+      .if ( var_name == "self" ) 
+      	.assign var_name = "this"
+      .end if
     .end if
     .assign parameters = ""
     .assign parameter_OAL = ""
@@ -1250,12 +1299,12 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .assign parameters = te_parm.ParamBuffer
       .assign parameter_OAL = te_parm.OALParamBuffer
     .end if
-    .assign operation_name = te_tfr.GeneratedName
+    .assign operation_name = te_tfr.Name
     .assign uses_thismodule = false
     .if ( "C++" == te_target.language )
       .assign uses_thismodule = true
       .if ( not instance_based )
-        .assign operation_name = ( te_class.GeneratedName + "::" ) + te_tfr.GeneratedName
+        .assign operation_name = ( te_class.Name + "::" ) + te_tfr.Name
       .end if
     .end if
     .include "${te_file.arc_path}/t.smt.operation.c"
@@ -1316,8 +1365,10 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
         .end if
       .end if
     .end if
-    .include "${te_file.arc_path}/t.smt.bridge.c"
-    .assign te_smt.OAL = "${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} )"
+    .//.include "${te_file.arc_path}/t.smt.bridge.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} );
+   .assign te_smt.OAL = "${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} )"
   .end if
 .end function
 .//
@@ -1356,7 +1407,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .if ( "C++" == te_target.language )
       .assign function_name = "thismodule->" + function_name
     .end if
-    .include "${te_file.arc_path}/t.smt.function.c"
+    .//.include "${te_file.arc_path}/t.smt.function.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}${te_sync.GeneratedName}( ${parameter_OAL} );
     .assign te_smt.OAL = "::${te_sync.Name}( ${parameter_OAL} )"
   .end if
 .end function
@@ -1427,7 +1480,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
       .assign value_OAL = te_val.OAL
     .end if
     .//
-    .include "${te_file.arc_path}/t.smt.return.c"
+    .//.include "${te_file.arc_path}/t.smt.return.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}return ${value};
     .assign te_smt.OAL = "RETURN " + value_OAL
   .end if
 .end function
@@ -1454,7 +1509,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
   .select any te_target from instances of TE_TARGET
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .include "${te_file.arc_path}/t.smt.control.c"
+  .//.include "${te_file.arc_path}/t.smt.control.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}control;
   .assign te_smt.OAL = "CONTROL"
 .end function
 .//
@@ -1492,7 +1549,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .end if
     .select one parent_te_blk related by parent_te_smt->TE_BLK[R2078]
   .end while
-  .include "${te_file.arc_path}/t.smt.break.c"
+  .//.include "${te_file.arc_path}/t.smt.break.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}break;
   .assign te_smt.OAL = "BREAK"
 .end function
 .//
@@ -1530,7 +1589,9 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
     .end if
     .select one parent_te_blk related by parent_te_smt->TE_BLK[R2078]
   .end while
-  .include "${te_file.arc_path}/t.smt.continue.c"
+  .//.include "${te_file.arc_path}/t.smt.continue.c"
+     .// oal2masl:  Use MASL instead of OAL.
+${ws}continue;
   .assign te_smt.OAL = "CONTINUE"
 .end function
 .//
@@ -1684,13 +1745,13 @@ ${ws}for each ${te_for.loop_variable} in ${te_for.set_variable} loop
   .// declaration
   .if ( te_select_related.is_implicit )
     .if ( "many" == te_select_related.multiplicity )
-      .assign d = "${te_set.scope}${te_set.base_class} ${te_select_related.result_var}_space={0}; ${te_set.scope}${te_set.base_class} * ${te_select_related.result_var} = &${te_select_related.result_var}_space;"
+      .assign d = "${te_set.scope}${te_set.base_class} ${te_select_related.result_var}_space={0}; ${te_set.scope}${te_set.base_class} : ${te_select_related.result_var} = &${te_select_related.result_var}_space;"
       .invoke blk_declaration_append( te_blk, d )
       .assign d = "${te_set.module}${te_set.clear}( ${te_select_related.result_var} ); "
       .// Push deallocation into the block so that it is available at gen time for break/continue/return.
       .invoke blk_deallocation_append( te_blk, d )
     .else
-      .assign d = "${te_class.GeneratedName} * ${te_select_related.result_var}=0;"
+      .assign d = "${te_class.GeneratedName} : ${te_select_related.result_var}=0;"
       .invoke blk_declaration_append( te_blk, d )
     .end if
   .end if

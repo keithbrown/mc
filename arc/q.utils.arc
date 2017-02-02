@@ -41,10 +41,16 @@
       .end if
       .assign code = code + param_delimiter
       .//
+      .if ( te_val.buffer == "TRUE" )
+        .assign te_val.buffer = "true";
+      .end if
+      .if ( te_val.buffer == "FALSE" )
+        .assign te_val.buffer = "false";
+      .end if
       .if ( 0 == te_par.By_Ref )
         .assign code = code + te_val.buffer
       .else
-        .assign code = ( ( code + "&(" ) + ( te_val.buffer + ")" ) )
+        .assign code = code + te_val.buffer
       .end if
       .assign param_delimiter = ", "
       .assign item_number = item_number + 1

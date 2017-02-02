@@ -29,14 +29,14 @@
     .while ( not_empty act_smt )
       .assign next = empty_act_smt
       .select one te_smt related by act_smt->TE_SMT[R2038]
-      .if ( "" != te_smt.OAL )
-        .assign statement_comment = ( ( te_blk.indentation + "/" ) + ( "* " + te_smt.OAL ) ) + ( " *" + "/\n" )
-        .invoke aba_code_append( te_aba, statement_comment )
-        .if ( trace )
-          .assign statement_trace = ( ( te_blk.indentation + "XTUML_OAL_STMT_TRACE( " ) + ( "$t{te_blk.depth}" + ", """ ) ) + ( te_smt.OAL + """ );\n" )
-          .invoke aba_code_append( te_aba, statement_trace )
-        .end if
-      .end if
+.//      .if ( "" != te_smt.OAL )
+.//        .assign statement_comment = ( ( te_blk.indentation + "/" ) + ( "* " + te_smt.OAL ) ) + ( " *" + "/\n" )
+.//        .invoke aba_code_append( te_aba, statement_comment )
+.//        .if ( trace )
+.//          .assign statement_trace = ( ( te_blk.indentation + "XTUML_OAL_STMT_TRACE( " ) + ( "$t{te_blk.depth}" + ", """ ) ) + ( te_smt.OAL + """ );\n" )
+.//          .invoke aba_code_append( te_aba, statement_trace )
+.//        .end if
+.//      .end if
       .invoke aba_code_append( te_aba, te_smt.buffer )
       .select one for_te_blk related by act_smt->ACT_FOR[R603]->ACT_BLK[R605]->TE_BLK[R2016]
       .if ( not_empty for_te_blk )
@@ -105,11 +105,11 @@
       .end if
       .assign act_smt = next
     .end while
-    .if ( "" != te_blk.deallocation )
-      .invoke aba_code_append( te_aba, te_blk.indentation )
-      .invoke aba_code_append( te_aba, te_blk.deallocation )
-      .invoke aba_code_append( te_aba, "\n" )
-    .end if
+.//    .if ( "" != te_blk.deallocation )
+.//      .invoke aba_code_append( te_aba, te_blk.indentation )
+.//      .invoke aba_code_append( te_aba, te_blk.deallocation )
+.//      .invoke aba_code_append( te_aba, "\n" )
+.//    .end if
   .end if
 .end function
 .//
@@ -122,6 +122,9 @@
 .function blk_declaration_append
   .param inst_ref te_blk
   .param string s
+  .if (te_blk.declaration != "")
+    .assign te_blk.declaration = te_blk.declaration + "\n" + te_blk.indentation
+  .end if
   .assign te_blk.declaration = te_blk.declaration + s
 .end function
 .//
