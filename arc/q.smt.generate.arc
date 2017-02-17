@@ -1497,9 +1497,6 @@ ${ws}return ${value};
     .select one te_smt related by act_ctl->ACT_SMT[R603]->TE_SMT[R2038]
     .invoke r = smt_control( te_smt, act_ctl )
     .invoke smt_buffer_append( te_smt, r.body )
-${ws}OAL: control;
-${ws}NOT_SUPPORTED_IN_MASL;
-${ws}// OAL "control" statement is not supported in MASL
   .end for
 .end function
 .//
@@ -1513,10 +1510,10 @@ ${ws}// OAL "control" statement is not supported in MASL
   .select any te_target from instances of TE_TARGET
   .select one te_blk related by te_smt->TE_BLK[R2078]
   .assign ws = te_blk.indentation
-  .//.include "${te_file.arc_path}/t.smt.control.c"
-     .// oal2masl:  Use MASL instead of OAL.
-${ws}control;
   .assign te_smt.OAL = "CONTROL"
+${ws}// OAL: control stop;
+${ws}NOT_SUPPORTED_IN_MASL;
+${ws}// OAL "control" statement is not supported in MASL
 .end function
 .//
 .// --------------------------------------------------------
