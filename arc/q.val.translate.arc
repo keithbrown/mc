@@ -114,7 +114,6 @@
   .select many v_lsts from instances of V_LST
   .for each v_lst in v_lsts
     .select one te_val related by v_lst->V_VAL[R801]->TE_VAL[R2040]
-    .// oal2masl:  Use MASL instead of C.
     .// s = T::t( s:v_lst.Value );
     .assign s = v_lst.Value
     .invoke oal( "s = Escher_strcpy( s, T_t( v_lst->Value ) ); // Ccode" )
@@ -157,7 +156,7 @@
     .select one te_val related by v_len->V_VAL[R801]->TE_VAL[R2040]
     .select one te_enum related by v_len->S_ENUM[R824]->TE_ENUM[R2027]
     .assign te_val.OAL = te_enum.Name
-    .assign te_val.buffer = te_enum.GeneratedName
+    .assign te_val.buffer = te_enum.Name
   .end for
 .end function
 .//
@@ -339,8 +338,10 @@
   .select many v_slrs from instances of V_SLR
   .for each v_slr in v_slrs
     .select one te_val related by v_slr->V_VAL[R801]->TE_VAL[R2040]
-    .assign te_val.buffer = "selected"
-    .assign te_val.OAL = "SELECTED"
+    .//assign te_val.buffer = "selected"
+    .//assign te_val.OAL = "SELECTED"
+    .assign te_val.buffer = ""
+    .assign te_val.OAL = ""
   .end for
 .end function
 .//
@@ -372,7 +373,8 @@
         .assign te_evt.Used = true
       .end if
     .end if
-    .assign te_val.OAL = "PARAM." + te_parm.Name
+    .//assign te_val.OAL = "PARAM." + te_parm.Name
+    .assign te_val.OAL = "" + te_parm.Name
     .assign te_val.buffer = "rcvd_evt->" + te_parm.GeneratedName
     .assign te_val.dimensions = te_parm.dimensions
     .assign te_val.array_spec = te_parm.array_spec
@@ -404,7 +406,8 @@
     .end if
     .end if
     .end if
-    .assign te_val.OAL = "PARAM." + te_parm.Name
+    .//assign te_val.OAL = "PARAM." + te_parm.Name
+    .assign te_val.OAL = te_parm.Name
     .assign te_val.buffer = te_parm.GeneratedName
     .assign te_val.dimensions = te_parm.dimensions
     .assign te_val.array_spec = te_parm.array_spec
@@ -688,14 +691,15 @@
             .assign te_val.buffer = ( te_var.buffer + "->" ) + te_val.buffer
           .end if
           .assign te_val.buffer = te_val.buffer + te_var.buffer
-          .assign te_val.OAL = te_var.OAL + "."
+          .//assign te_val.OAL = te_var.OAL + "."
         .else
           .// no variable, must be selection (selected reference)
           .if ( "C++" == te_target.language )
             .assign te_val.buffer = "selected->" + te_val.buffer
           .end if
           .assign te_val.buffer = te_val.buffer + "selected"
-          .assign te_val.OAL = "SELECTED."
+          .//assign te_val.OAL = "SELECTED."
+          .assign te_val.OAL = ""
         .end if
       .else
         .if ( "C++" == te_target.language )

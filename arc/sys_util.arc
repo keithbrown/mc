@@ -159,9 +159,10 @@ typedef union {
 .//============================================================================
 .function DefineClassInfoArray
   .param inst_ref first_te_c
-  .assign ci = "/* xtUML class info for all of the components (collections, sizes, etc.) */"
+.// .assign ci = "/* xtUML class info for all of the components (collections, sizes, etc.) */"
   .select any te_cia from instances of TE_CIA
-  .assign ci = ci + "\n${te_cia.class_info_type} * const * const ${te_cia.class_info_name}[ SYSTEM_DOMAIN_COUNT ] = {"
+.// .assign ci = ci + "\n${te_cia.class_info_type} * const * const ${te_cia.class_info_name}[ SYSTEM_DOMAIN_COUNT ] = {"
+.assign ci = ""
   .assign te_c = first_te_c
   .while ( not_empty te_c )
     .// Include a pointer to the component classes only if component has classes.
@@ -197,8 +198,8 @@ typedef union {
     .end if
   .end while
   .assign cc = cc + "\n  };"
-  .assign attr_class_info = ci
-  .assign attr_class_count = cc
+  .assign attr_class_info = ""
+  .assign attr_class_count = ""
 .end function
 .//
 .//============================================================================

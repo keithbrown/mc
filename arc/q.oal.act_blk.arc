@@ -132,6 +132,8 @@
   .param inst_ref te_blk
   .param string s
   .assign te_blk.deallocation = te_blk.deallocation + s
+.//DEBUG: blk_deallocation_append called with ${s}
+  .assign te_blk.deallocation = ""
 .end function
 .//
 .function aba_code_append

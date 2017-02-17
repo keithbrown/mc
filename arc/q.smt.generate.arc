@@ -454,12 +454,12 @@ ${ws}delete ${v_var.Name};
         .end if
         .invoke blk_declaration_append( te_blk, d )
       .end if
-.//${ws}create event instance ${v_var.Name}( ${parameter_OAL} ) to ${recipient_OAL};
-// Automatic translation of timers is not supported
-// by this version of the OAL to MASL translator.
-PARSE ERROR
-// You must manually replaces the OAL timer mechanism
-// with the MASL equivalent.
+${ws}//OAL: create event instance ${v_var.Name}( ${parameter_OAL} ) to ${recipient_OAL};
+${ws}NOT_SUPPORTED_IN_MASL;
+${ws}// Automatic translation of OAL timers is not supported
+${ws}// by this version of the OAL to MASL translator.
+${ws}// You must manually replaces the OAL timer mechanism
+${ws}// with the MASL equivalent.
       .assign te_smt.OAL = "CREATE EVENT INSTANCE ${v_var.Name}( ${parameter_OAL} ) TO ${recipient_OAL}"
     .end if
   .end if
@@ -1353,7 +1353,8 @@ ${ws}generate ${te_class.Name}:${sm_evt.Mning}(${parameters});
       .assign parameters = te_parm.ParamBuffer
       .assign parameter_OAL = te_parm.OALParamBuffer
     .end if
-    .assign bridge_name = te_brg.GeneratedName
+    .assign external_name = te_ee.Name;
+    .assign bridge_name = te_brg.Name
     .if ( "C++" == te_target.language )
       .assign bridge_name = ( te_ee.RegisteredName + "::" ) + bridge_name
       .select one te_c related by te_ee->TE_C[R2085]
@@ -1365,9 +1366,9 @@ ${ws}generate ${te_class.Name}:${sm_evt.Mning}(${parameters});
         .end if
       .end if
     .end if
-    .//.include "${te_file.arc_path}/t.smt.bridge.c"
+    .include "${te_file.arc_path}/t.smt.bridge.c"
      .// oal2masl:  Use MASL instead of OAL.
-${ws}${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} );
+     .//{ws}${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} );
    .assign te_smt.OAL = "${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} )"
   .end if
 .end function
@@ -1403,13 +1404,13 @@ ${ws}${te_brg.EEkeyletters}::${te_brg.Name}( ${parameter_OAL} );
       .assign parameters = te_parm.ParamBuffer
       .assign parameter_OAL = te_parm.OALParamBuffer
     .end if
-    .assign function_name = te_sync.intraface_method
+    .assign function_name = te_sync.name
     .if ( "C++" == te_target.language )
       .assign function_name = "thismodule->" + function_name
     .end if
-    .//.include "${te_file.arc_path}/t.smt.function.c"
+    .include "${te_file.arc_path}/t.smt.function.c"
      .// oal2masl:  Use MASL instead of OAL.
-${ws}${te_sync.GeneratedName}( ${parameter_OAL} );
+.//${ws}${te_sync.GeneratedName}( ${parameter_OAL} );
     .assign te_smt.OAL = "::${te_sync.Name}( ${parameter_OAL} )"
   .end if
 .end function
@@ -1496,6 +1497,9 @@ ${ws}return ${value};
     .select one te_smt related by act_ctl->ACT_SMT[R603]->TE_SMT[R2038]
     .invoke r = smt_control( te_smt, act_ctl )
     .invoke smt_buffer_append( te_smt, r.body )
+${ws}OAL: control;
+${ws}NOT_SUPPORTED_IN_MASL;
+${ws}// OAL "control" statement is not supported in MASL
   .end for
 .end function
 .//
@@ -1551,7 +1555,7 @@ ${ws}control;
   .end while
   .//.include "${te_file.arc_path}/t.smt.break.c"
      .// oal2masl:  Use MASL instead of OAL.
-${ws}break;
+${ws}exit;
   .assign te_smt.OAL = "BREAK"
 .end function
 .//
@@ -1591,7 +1595,9 @@ ${ws}break;
   .end while
   .//.include "${te_file.arc_path}/t.smt.continue.c"
      .// oal2masl:  Use MASL instead of OAL.
-${ws}continue;
+${ws}OAL: continue;
+${ws}NOT_SUPPORTED_IN_MASL;
+${ws}// OAL "continue" statement is not supported in MASL
   .assign te_smt.OAL = "CONTINUE"
 .end function
 .//
@@ -1655,7 +1661,7 @@ ${ws}continue;
     .select one te_class related by result_v_var->V_INS[R814]->O_OBJ[R819]->TE_CLASS[R2019]
   .end if
   .if ( te_select_related.start_many )
-    .assign te_lnk.left = te_select_related.te_classGeneratedName + "_linkage"
+    .assign te_lnk.left = te_select_related.start_var
   .end if
   .if ( te_select_related.by_where )
     .select one where_te_val related by act_sel->ACT_SRW[R664]->V_VAL[R611]->TE_VAL[R2040]
@@ -1677,68 +1683,6 @@ ${ws}continue;
   .// relate te_select_related to te_lnk across R2073;
   .assign te_select_related.link_ID = te_lnk.ID
   .// end relate
-  .//
-  .// RENDER
-  .// Truth Table
-  .//
-  .// Notes:
-  .// 1) Selecting "many" or "any" through a chain that has multiplicity 1
-  .//    all the way through should not be allowed by the OAL parser.
-  .//    However, maybe a parser will not catch it.  Therefore, we will
-  .//    support the construct in the code generator.  We will treat it
-  .//    like the corresponding "one" case but populate an result set.
-  .// 2) Selecting "one" through a chain that has multiplicity M should
-  .//    not be allowed by the OAL parser.  However, maybe a parser will
-  .//    miss it.  Therefore, we will do something that makes sense.  We
-  .//    treat it like the "any" case in the code generator.
-  .//
-  .//   A <*----R1----1> B <*----R2----1> C
-  .//     <1----R9----*>   <1----R8----*>
-  .//
-  .// single-link chains
-  .// Declaration based upon multiplicity.
-  .//  #  | first | last | startmany | multiplicity | linkmult | by_where | example
-  .//  1  |   T   |  T   |     F     |   "one"      |  0:one   |    F     | select one b related by a->B[R1];
-  .//  2  |   T   |  T   |     F     |   "one"      |  0:one   |    T     | select one b related by a->B[R1] where ( selected.i == 7 );
-  .//  3  |   T   |  T   |     F     | "one"->"any" |  1:many  |    F     | select one b related by a->B[R9];                              // Note 2
-  .//  4  |   T   |  T   |     F     | "one"->"any" |  1:many  |    T     | select one b related by a->B[R9] where ( selected.i == 7 );    // Note 2
-  .//  5  |   T   |  T   |     F     |   "any"      |  0:one   |    F     | select any b related by a->B[R1];                              // Note 1
-  .//  6  |   T   |  T   |     F     |   "any"      |  0:one   |    T     | select any b related by a->B[R1] where ( selected.i == 7 );    // Note 1
-  .//  7  |   T   |  T   |     F     |   "any"      |  1:many  |    F     | select any b related by a->B[R9];
-  .//  8  |   T   |  T   |     F     |   "any"      |  1:many  |    T     | select any b related by a->B[R9] where ( selected.i == 7 );
-  .//  9  |   T   |  T   |     F     |   "many"     |  0:one   |    F     | select many bs related by a->B[R1];                            // Note 1
-  .// 10  |   T   |  T   |     F     |   "many"     |  0:one   |    T     | select many bs related by a->B[R1] where ( selected.i == 7 );  // Note 1
-  .// 11  |   T   |  T   |     F     |   "many"     |  1:many  |    F     | select many bs related by a->B[R9];
-  .// 12  |   T   |  T   |     F     |   "many"     |  1:many  |    T     | select many bs related by a->B[R9] where ( selected.i == 7 );
-  .// 13  |   T   |  T   |     T     | "one"->"any" |  0:one   |    F     | select one b related by as->B[R1];                             // Note 2
-  .// 14  |   T   |  T   |     T     | "one"->"any" |  0:one   |    T     | select one b related by as->B[R1] where ( selected.i == 7 );   // Note 2
-  .// 15  |   T   |  T   |     T     | "one"->"any" |  1:many  |    F     | select one b related by as->B[R9];                             // Note 2
-  .// 16  |   T   |  T   |     T     | "one"->"any" |  1:many  |    T     | select one b related by as->B[R9] where ( selected.i == 7 );   // Note 2
-  .// 17  |   T   |  T   |     T     |   "any"      |  0:one   |    F     | select any b related by as->B[R1];
-  .// 18  |   T   |  T   |     T     |   "any"      |  0:one   |    T     | select any b related by as->B[R1] where ( selected.i == 7 );
-  .// 19  |   T   |  T   |     T     |   "any"      |  1:many  |    F     | select any b related by as->B[R9];
-  .// 20  |   T   |  T   |     T     |   "any"      |  1:many  |    T     | select any b related by as->B[R9] where ( selected.i == 7 );
-  .// 21  |   T   |  T   |     T     |   "many"     |  0:one   |    F     | select many bs related by as->B[R1];
-  .// 22  |   T   |  T   |     T     |   "many"     |  0:one   |    T     | select many bs related by as->B[R1] where ( selected.i == 7 );
-  .// 23  |   T   |  T   |     T     |   "many"     |  1:many  |    F     | select many bs related by as->B[R9];
-  .// 24  |   T   |  T   |     T     |   "many"     |  1:many  |    T     | select many bs related by as->B[R9] where ( selected.i == 7 );
-  .// multi-link chains
-  .// Declaration/initialization based upon multiplicity.
-  .// First iterator based upon startmany.
-  .// Chaining based upon multiplicity (and "any").
-  .//  #  | first | last | multiplicity | linkmult | by_where | example
-  .//  1m |   T   |  F   |   "one"      |  0:one   |    F     | select one c related by a(s)->B[R1]->C[R2];
-  .//  2m |   T   |  F   |   "one"      |  0:one   |    T     | select one c related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );
-  .//  3m |   T   |  F   | "one"->"any" |  1:many  |    F     | select one c related by a(s)->B[R9]->C[R8];                              // Note 2
-  .//  4m |   T   |  F   | "one"->"any" |  1:many  |    T     | select one c related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );    // Note 2
-  .//  5m |   T   |  F   |   "any"      |  0:one   |    F     | select any c related by a(s)->B[R1]->C[R2];                              // Note 1, 2
-  .//  6m |   T   |  F   |   "any"      |  0:one   |    T     | select any c related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );    // Note 1, 2
-  .//  7m |   T   |  F   |   "any"      |  1:many  |    F     | select any c related by a(s)->B[R9]->C[R8];
-  .//  8m |   T   |  F   |   "any"      |  1:many  |    T     | select any c related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );
-  .//  9m |   T   |  F   |   "many"     |  0:one   |    F     | select many cs related by a(s)->B[R1]->C[R2];                            // Note 1
-  .// 10m |   T   |  F   |   "many"     |  0:one   |    T     | select many cs related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );  // Note 1
-  .// 11m |   T   |  F   |   "many"     |  1:many  |    F     | select many cs related by a(s)->B[R9]->C[R8];
-  .// 12m |   T   |  F   |   "many"     |  1:many  |    T     | select many cs related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );
   .//
   .assign ws = te_blk.indentation
   .assign te_smt.OAL = "SELECT ${te_select_related.multiplicity} ${te_select_related.result_var_OAL} RELATED BY ${te_select_related.start_var_OAL}"
@@ -1766,266 +1710,44 @@ ${ws}continue;
       .assign subtypecheck = "${ws}if ( ( 0 != ${te_lnk.left} ) && ( ${lnk_te_class.system_class_number} == ${te_lnk.left}->R$t{te_lnk.rel_number}_object_id ) )"
     .end if
   .end if
-  .// single-link chains
-  .//  #  | first | last | startmany | multiplicity | linkmult | by_where | example
-  .if ( ( te_lnk.first ) and ( te_lnk.last ) )
-    .assign te_smt.OAL = te_smt.OAL + te_lnk.OAL
-    .if ( not te_select_related.start_many )
-      .if ( "one" == te_select_related.multiplicity )
-        .if ( 0 == te_lnk.Mult )
-          .if ( not_empty sub_r_rel )
-            .include "${te_file.arc_path}/t.smt_sr.result_ref_init.c"
-${subtypecheck}\
-          .end if
-          .if ( not te_select_related.by_where )
-  .//  1  |   T   |  T   |     F     |   "one"      |  0:one   |    F     | select one b related by a->B[R1];
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atob1.c"
-          .else
-  .//  2  |   T   |  T   |     F     |   "one"      |  0:one   |    T     | select one b related by a->B[R1] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .//  3  |   T   |  T   |     F     | "one"->"any" |  1:many  |    F     | select one b related by a->B[R9];                              // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobm.c"
-          .else
-  .//  4  |   T   |  T   |     F     | "one"->"any" |  1:many  |    T     | select one b related by a->B[R9] where ( selected.i == 7 );    // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobmwhere.c"
-          .end if
-        .end if
-      .elif ( "any" == te_select_related.multiplicity )
-        .if ( 0 == te_lnk.Mult )
-          .if ( not_empty sub_r_rel )
-            .include "${te_file.arc_path}/t.smt_sr.result_ref_init.c"
-${subtypecheck}\
-          .end if
-          .if ( not te_select_related.by_where )
-  .//  5  |   T   |  T   |     F     |   "any"      |  0:one   |    F     | select any b related by a->B[R1];                              // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atob1.c"
-          .else
-  .//  6  |   T   |  T   |     F     |   "any"      |  0:one   |    T     | select any b related by a->B[R1] where ( selected.i == 7 );    // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .//  7  |   T   |  T   |     F     |   "any"      |  1:many  |    F     | select any b related by a->B[R9];
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobm.c"
-          .else
-  .//  8  |   T   |  T   |     F     |   "any"      |  1:many  |    T     | select any b related by a->B[R9] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobmwhere.c"
-          .end if
-        .end if
-      .else
-        .if ( 0 == te_lnk.Mult )
-          .if ( not te_select_related.by_where )
-  .//  9  |   T   |  T   |     F     |   "many"     |  0:one   |    F     | select many bs related by a->B[R1];                            // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.many_atob1.c"
-          .else
-  .// 10  |   T   |  T   |     F     |   "many"     |  0:one   |    T     | select many bs related by a->B[R1] where ( selected.i == 7 );  // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.many_atob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .// 11  |   T   |  T   |     F     |   "many"     |  1:many  |    F     | select many bs related by a->B[R9];
-  .include "${te_file.arc_path}/t.smt_sr.many_atobm.c"
-          .else
-  .// 12  |   T   |  T   |     F     |   "many"     |  1:many  |    T     | select many bs related by a->B[R9] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.many_atobmwhere.c"
-          .end if
-        .end if
-      .end if
-    .else
-      .if ( "one" == te_select_related.multiplicity )
-        .if ( 0 == te_lnk.Mult )
-          .if ( not te_select_related.by_where )
-  .// 13  |   T   |  T   |     T     | "one"->"any" |  0:one   |    F     | select one b related by as->B[R1];                             // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astob1.c"
-          .else
-  .// 14  |   T   |  T   |     T     | "one"->"any" |  0:one   |    T     | select one b related by as->B[R1] where ( selected.i == 7 );   // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .// 15  |   T   |  T   |     T     | "one"->"any" |  1:many  |    F     | select one b related by as->B[R9];                             // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astobm.c"
-          .else
-  .// 16  |   T   |  T   |     T     | "one"->"any" |  1:many  |    T     | select one b related by as->B[R9] where ( selected.i == 7 );   // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astobmwhere.c"
-          .end if
-        .end if
-      .elif ( "any" == te_select_related.multiplicity )
-        .if ( 0 == te_lnk.Mult )
-          .if ( not te_select_related.by_where )
-  .// 17  |   T   |  T   |     T     |   "any"      |  0:one   |    F     | select any b related by as->B[R1];
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astob1.c"
-          .else
-  .// 18  |   T   |  T   |     T     |   "any"      |  0:one   |    T     | select any b related by as->B[R1] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .// 19  |   T   |  T   |     T     |   "any"      |  1:many  |    F     | select any b related by as->B[R9];
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astobm.c"
-          .else
-  .// 20  |   T   |  T   |     T     |   "any"      |  1:many  |    T     | select any b related by as->B[R9] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.oneany_astobmwhere.c"
-          .end if
-        .end if
-      .else
-        .if ( 0 == te_lnk.Mult )
-          .if ( not te_select_related.by_where )
-  .// 21  |   T   |  T   |     T     |   "many"     |  0:one   |    F     | select many bs related by as->B[R1];
-  .include "${te_file.arc_path}/t.smt_sr.many_astob1.c"
-          .else
-  .// 22  |   T   |  T   |     T     |   "many"     |  0:one   |    T     | select many bs related by as->B[R1] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.many_astob1where.c"
-          .end if
-        .else
-          .if ( not te_select_related.by_where )
-  .// 23  |   T   |  T   |     T     |   "many"     |  1:many  |    F     | select many bs related by as->B[R9];
-  .include "${te_file.arc_path}/t.smt_sr.many_astobm.c"
-          .else
-  .// 24  |   T   |  T   |     T     |   "many"     |  1:many  |    T     | select many bs related by as->B[R9] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.many_astobmwhere.c"
-          .end if .// by_where
-        .end if .// last link mult
-      .end if .// one, any, many
-    .end if .// start many
-  .else
   .//
-  .// multi-link chains
-    .// multi-link chains
-    .// This may need to be refactored to remove some degree of control.
-    .assign depth = 0
-    .if ( "many" == te_select_related.multiplicity )
-      .include "${te_file.arc_path}/t.smt_sr.result_set_init.c"
-    .else
-      .if ( te_select_related.result_var != te_select_related.start_var )
-        .// Do not initialize result when it is the same as starting variable.
-        .include "${te_file.arc_path}/t.smt_sr.result_ref_init.c"
-      .end if
-    .end if
-${ws}{\
-    .assign depth = depth + 1
-    .if ( te_select_related.start_many )
-      .assign depth = depth + 1
-      .include "${te_file.arc_path}/t.smt_sr.start_many.c"
-    .else
-      .assign depth = depth + 1
-      .include "${te_file.arc_path}/t.smt_sr.start_one.c"
-    .end if
-    .// drill through the chained links
-    .while ( not te_lnk.last )
-      .assign depth = depth + 1
-      .assign te_smt.OAL = te_smt.OAL + te_lnk.OAL
-      .if ( 0 == te_lnk.Mult )
-        .assign cast = ""
-        .assign subtypecheck = ""
-        .if ( "subsuper" == te_lnk.assoc_type )
-          .select one lnk_te_class related by te_lnk->TE_CLASS[R2076]
-          .select any sub_r_rel related by lnk_te_class->O_OBJ[R2019]->R_OIR[R201]->R_RGO[R203]->R_SUB[R205]->R_SUBSUP[R213]->R_REL[R206] where ( selected.Numb == te_lnk.rel_number )
-          .if ( not_empty sub_r_rel )
-            .assign cast = ( "(" + te_lnk.te_classGeneratedName ) + " *) "
-            .assign subtypecheck = "${ws}if ( ( 0 != ${te_lnk.left} ) && ( ${lnk_te_class.system_class_number} == ${te_lnk.left}->R$t{te_lnk.rel_number}_object_id ) )"
-          .end if
-        .end if
-        .assign result_equals_start = false
-        .if ( te_select_related.result_var == te_lnk.left )
-          .assign result_equals_start = true
-        .end if
-        .include "${te_file.arc_path}/t.smt_sr.chainto1.c"
-      .else
-        .include "${te_file.arc_path}/t.smt_sr.chaintom.c"
-      .end if
-      .select one te_lnk related by te_lnk->TE_LNK[R2075.'succeeds']
-    .end while
-    .assign te_smt.OAL = te_smt.OAL + te_lnk.OAL
-    .assign cast = ""
-    .assign subtypecheck = ""
-    .if ( "subsuper" == te_lnk.assoc_type )
-      .select any sub_r_rel related by te_class->O_OBJ[R2019]->R_OIR[R201]->R_RGO[R203]->R_SUB[R205]->R_SUBSUP[R213]->R_REL[R206] where ( selected.Numb == te_lnk.rel_number )
-      .if ( not_empty sub_r_rel )
-        .assign lnk_te_class = te_class
-        .assign cast = ( "(" + te_lnk.te_classGeneratedName ) + " *) "
-        .assign subtypecheck = "${ws}if ( ( 0 != ${te_lnk.left} ) && ( ${lnk_te_class.system_class_number} == ${te_lnk.left}->R$t{te_lnk.rel_number}_object_id ) )"
-      .end if
-    .end if
-    .// now finish up
-    .if ( "one" == te_select_related.multiplicity )
-      .if ( 0 == te_lnk.Mult )
-        .if ( not_empty sub_r_rel )
-${subtypecheck}\
-        .end if
-        .if ( not te_select_related.by_where )
-  .//  1m |   T   |  F   |   "one"      |  0:one   |    F     | select one c related by a(s)->B[R1]->C[R2];
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astob1.c"
-        .else
-  .//  2m |   T   |  F   |   "one"      |  0:one   |    T     | select one c related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astob1where.c"
-        .end if
-      .else
-        .if ( not te_select_related.by_where )
-  .//  3m |   T   |  F   | "one"->"any" |  1:many  |    F     | select one c related by a(s)->B[R9]->C[R8];                              // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobm.c"
-        .else
-  .//  4m |   T   |  F   | "one"->"any" |  1:many  |    T     | select one c related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );    // Note 2
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astobmwhere.c"
-        .end if
-      .end if
-    .elif ( "any" == te_select_related.multiplicity )
-      .if ( 0 == te_lnk.Mult )
-        .if ( not_empty sub_r_rel )
-${subtypecheck}\
-        .end if
-        .if ( not te_select_related.by_where )
-  .//  5m |   T   |  F   |   "any"      |  0:one   |    F     | select any c related by a(s)->B[R1]->C[R2];                              // Note 1, 2
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astob1.c"
-        .else
-  .//  6m |   T   |  F   |   "any"      |  0:one   |    T     | select any c related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );    // Note 1, 2
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astob1where.c"
-        .end if
-      .else
-        .if ( not te_select_related.by_where )
-  .//  7m |   T   |  F   |   "any"      |  1:many  |    F     | select any c related by a(s)->B[R9]->C[R8];
-  .include "${te_file.arc_path}/t.smt_sr.oneany_atobm.c"
-        .else
-  .//  8m |   T   |  F   |   "any"      |  1:many  |    T     | select any c related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.multi_oneany_astobmwhere.c"
-        .end if
-      .end if
-    .else
-      .if ( 0 == te_lnk.Mult )
-        .if ( not_empty sub_r_rel )
-${subtypecheck}\
-        .end if
-        .if ( not te_select_related.by_where )
-  .//  9m |   T   |  F   |   "many"     |  0:one   |    F     | select many cs related by a(s)->B[R1]->C[R2];                            // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.multi_many_astob1.c"
-        .else
-  .// 10m |   T   |  F   |   "many"     |  0:one   |    T     | select many cs related by a(s)->B[R1]->C[R2] where ( selected.i == 7 );  // Note 1
-  .include "${te_file.arc_path}/t.smt_sr.multi_many_astob1where.c"
-        .end if
-      .else
-        .if ( not te_select_related.by_where )
-  .// 11m |   T   |  F   |   "many"     |  1:many  |    F     | select many cs related by a(s)->B[R9]->C[R8];
-  .include "${te_file.arc_path}/t.smt_sr.multi_many_astobm.c"
-        .else
-  .// 12m |   T   |  F   |   "many"     |  1:many  |    T     | select many cs related by a(s)->B[R9]->C[R8] where ( selected.i == 7 );
-  .include "${te_file.arc_path}/t.smt_sr.multi_many_astobmwhere.c"
-        .end if .// by_where
-      .end if .// last link mult
-    .end if .// one, any, many
+  .// MASL Code generation
     .//
-    .while ( depth > 0 )
-}\
-      .assign depth = depth - 1
+    .// Assignment and starting handle
+    .if ( "any" == te_select_related.multiplicity ) 
+      .// Put the results of the navigation in a temporary set for a later "find_one"
+${WS}${te_select_related.result_var}_set := ${te_lnk.left}\
+    .else
+      .// Put the results of the navigation directly into the result variable
+${WS}${te_select_related.result_var} := ${te_lnk.left}\
+    .end if
+    .//
+    .// Iterate over navigations in chain (even if there is only one)
+    .assign dotCharacter = "."
+    .assign endOfChain = false
+    .while ( not endOfChain )
+ -> R${te_lnk.rel_number}\
+      .if ( te_lnk.rel_phrase != "" )
+${dotCharacter}$_{te_lnk.rel_phrase}\
+      .end if
+      .if ( not te_lnk.last ) 
+        .select one te_lnk related by te_lnk->TE_LNK[R2075.'succeeds']
+      .else
+        .assign endOfChain = true
+      .end if
     .end while
-    .invoke oal( "T_b( \\n ); // Ccode" )
-
-  .end if
-  .if ( te_select_related.by_where )
-    .assign te_smt.OAL = te_smt.OAL + " WHERE ( ${te_select_related.where_clause_OAL} )"
-  .end if
+    .//
+    .// Where clause if required and end of statement
+    .if ( te_select_related.by_where )
+${te_select_related.where_clause_OAL};
+    .else
+;
+    .end if
+    .if ( "any" == te_select_related.multiplicity ) 
+       .// Extract the result from the temporary set
+${WS}${te_select_related.result_var} := find_one ${te_select_related.result_var}_set;
+    .end if
+    .assign te_smt.OAL = te_smt.OAL + te_lnk.OAL
   .end if
 .end function
 .//
