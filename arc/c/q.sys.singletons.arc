@@ -84,7 +84,7 @@
   .param inst_ref te_file
   .select any te_prefix from instances of TE_PREFIX
   .assign te_file.hdr_file_ext = "h"
-  .assign te_file.src_file_ext = "c"
+  .assign te_file.src_file_ext = "masl"
   .assign te_file.sys_main = te_prefix.file + "sys_main"
   .assign te_file.factory = te_prefix.file + "sys_xtuml"
   .assign te_file.events = te_prefix.file + "sys_events"
