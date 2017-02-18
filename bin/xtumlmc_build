@@ -1285,6 +1285,8 @@ sub determineBuildFileType($)
       @mark = ( @mark, $optarg );
     } elsif ( $optarg =~ /\.sql/ ) {
       @sqls = ( @sqls, $optarg );
+    } elsif ( $optarg =~ /\.masl/i ) {
+      @masl_files = ( @masl_files,$optarg );
     } elsif ( $optarg =~ /\.(c|cc|cpp|cxx)$/i ) {
       @c_files = ( @c_files,$optarg );
     } elsif ( $optarg =~ /\.(h|hh|hpp|hxx)$/i ) {
@@ -1703,11 +1705,18 @@ if ( (-f $mccmd) && ( $mc_type =~ /l3/ ) ) {
 xtumlmc_gen_erate( "$mc_type -nopersist -d 0 -import $schema -d 0 -import ${modelBeingTranslated} -arch \"$arcdir/sys.arc\"" );
 
 #---------------------------------------------------------------------------
+# Copy the MASL files into the correct locations.
 # Copy the C files into the correct locations.
 # Copy the H files into the correct locations.
 # Copy in any Makefiles.
 # Copy in the link_sys file.
 #---------------------------------------------------------------------------
+foreach $f (@masl_files) {
+  if ( -f "_ch/$f" ) {
+    xtumlmc_move( "_ch/$f", "_ch/$f.orig" );
+  }
+  xtumlmc_copy( "../$f", "_ch" );
+}
 foreach $f (@c_files) {
   if ( -f "_ch/$f" ) {
     xtumlmc_move( "_ch/$f", "_ch/$f.orig" );
@@ -1743,7 +1752,7 @@ if ( -d $output_src ) {
       xtumlmc_copy_different( "_ch/$g", "$output_src/$vistadir/$g" );
     }
   }
-  my @ch_entries = grep{/\.(c|cc|cpp|h|hh|hpp|xml)$/i} @entries;
+  my @ch_entries = grep{/\.(c|cc|cpp|h|hh|hpp|xml|masl)$/i} @entries;
   foreach my $f ( @ch_entries ) {
     if ( $f =~ m/(pv_template|sysc_main_template)/i ) {
       xtumlmc_copy_different( "_ch/$f", "$output_src/$vistadir/$f" );
