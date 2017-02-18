@@ -197,8 +197,8 @@
   .assign dq_arg = "t "
   .assign thread_number = "t"
 .end if
-.include "${te_file.arc_path}/t.sys_main.c"
-.emit to file "${te_file.system_source_path}/${te_file.sys_main}.${te_file.src_file_ext}"
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_main.c"
+.// SKB o2m removal-.emit to file "${te_file.system_source_path}/${te_file.sys_main}.${te_file.src_file_ext}"
 .//
 .invoke r = DefineActiveClassCountArray( te_cs )
 .assign active_class_counts = r.body
@@ -259,13 +259,13 @@
 .// SKB o2m removal-.include "${te_file.arc_path}/t.sys_factory.h"
 .// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.factory}.${te_file.hdr_file_ext}"
 .//
-.if ( not_empty te_cs )
+.// SKB o2m removal-.if ( not_empty te_cs )
 .//=============================================================================
 .// Generate sys_factory.c into system gen source.
 .//=============================================================================
-.include "${te_file.arc_path}/t.sys_factory.c"
-.emit to file "${te_file.system_source_path}/${te_file.factory}.${te_file.src_file_ext}"
-.end if
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_factory.c"
+.// SKB o2m removal-.emit to file "${te_file.system_source_path}/${te_file.factory}.${te_file.src_file_ext}"
+.// SKB o2m removal-.end if
 .//
 .//=============================================================================
 .// Generate sys_types.h containing the system-level declared types as well as
