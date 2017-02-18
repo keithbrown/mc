@@ -341,86 +341,86 @@ class ${te_c.Name}; // forward reference
     .assign batch_relation = s.body
   .end if
   .invoke special_where = AddObjectSpecialWhereMethods( o_obj, gen_declaration )
-${file_prologue.body}\
-${include_files.body}\
-  .if ( gen_declaration )
-${obj_data_class.body}\
-    .include "${te_file.arc_path}/t.class.instancedumper.h"
-  .end if
-${instance_loader}\
-${batch_relation}\
-${special_where.body}\
+.// SKB o2m removal-${file_prologue.body}\
+.// SKB o2m removal-${include_files.body}\
+.// SKB o2m removal-  .if ( gen_declaration )
+.// SKB o2m removal-${obj_data_class.body}\
+.// SKB o2m removal-    .include "${te_file.arc_path}/t.class.instancedumper.h"
+.// SKB o2m removal-  .end if
+.// SKB o2m removal-${instance_loader}\
+.// SKB o2m removal-${batch_relation}\
+.// SKB o2m removal-${special_where.body}\
 ${xforms.body}
-${rendered_relationships}
+.// SKB o2m removal-${rendered_relationships}
   .if ( gen_declaration )
     .if ( "C" != te_target.language )
 };
     .end if
   .else
-    .include "${te_file.arc_path}/t.class.instancedumper.c"
-    .if ( "" != xforms.body )
-      .include "${te_file.arc_path}/t.class.ops.c"
-    .end if
+.// SKB o2m removal-    .include "${te_file.arc_path}/t.class.instancedumper.c"
+.// SKB o2m removal-    .if ( "" != xforms.body )
+.// SKB o2m removal-      .include "${te_file.arc_path}/t.class.ops.c"
+.// SKB o2m removal-    .end if
   .end if
-${object_extent.body}\
+.// SKB o2m removal-${object_extent.body}\
   .//
   .// *** Active object specifics section
   .// Generate state and transtion action routines.
-  .if ( not gen_declaration )
-    .if ( ( not_empty sm_ism ) or ( not_empty sm_asm ) )
-      .include "${te_file.arc_path}/q.class.sm_sm.arc"
-    .end if
-  .end if
-  .if ( not_empty sm_asm )
-    .select one sm_sm related by sm_asm->SM_SM[R517]
-    .invoke cevents = CreateAssignerStateModelEvents( o_obj, sm_sm, gen_declaration )
+.// SKB o2m removal-  .if ( not gen_declaration )
+.// SKB o2m removal-    .if ( ( not_empty sm_ism ) or ( not_empty sm_asm ) )
+.// SKB o2m removal-      .include "${te_file.arc_path}/q.class.sm_sm.arc"
+.// SKB o2m removal-    .end if
+.// SKB o2m removal-  .end if
+.// SKB o2m removal-  .if ( not_empty sm_asm )
+.// SKB o2m removal-    .select one sm_sm related by sm_asm->SM_SM[R517]
+.// SKB o2m removal-    .invoke cevents = CreateAssignerStateModelEvents( o_obj, sm_sm, gen_declaration )
 
-${cevents.body}\
-    .if ( gen_declaration )
-      .invoke dispatcher = CreateClassBasedStateModelEventDispatcher( te_c, o_obj, gen_declaration )
-      .invoke state_enums = GetStateEnumsFromStateSet( sm_sm )
-      .invoke event_enums = CreateStateModelEventEnum( sm_sm )
-${state_enums.body}
-${event_enums.body}
-${dispatcher.body}
-    .else
+.// SKB o2m removal-${cevents.body}\
+.// SKB o2m removal-    .if ( gen_declaration )
+.// SKB o2m removal-      .invoke dispatcher = CreateClassBasedStateModelEventDispatcher( te_c, o_obj, gen_declaration )
+.// SKB o2m removal-      .invoke state_enums = GetStateEnumsFromStateSet( sm_sm )
+.// SKB o2m removal-      .invoke event_enums = CreateStateModelEventEnum( sm_sm )
+.// SKB o2m removal-${state_enums.body}
+.// SKB o2m removal-${event_enums.body}
+.// SKB o2m removal-${dispatcher.body}
+.// SKB o2m removal-    .else
       .// Consider moving state matrix into scope of access for MISRA.  For now
       .// we leave the data at file scope.
-      .invoke state_matrix   = CreateStateEventMatrixTable( sm_sm )
-      .invoke action_array   = CreateStateActionArray( te_c, sm_sm )
-      .invoke xaction_array  = CreateTransitionActionArray( sm_sm )
-      .invoke dispatcher     = CreateClassBasedStateModelEventDispatcher( te_c, o_obj, gen_declaration )
-${state_matrix.body}\
-${action_array.body}\
-${xaction_array.body}\
-${dispatcher.body}\
-    .end if
-  .end if
-  .if ( not_empty sm_ism )
-    .select one sm_sm related by sm_ism->SM_SM[R517]
-    .invoke ievents = CreateInstanceStateModelEvents( o_obj, sm_sm, gen_declaration )
+.// SKB o2m removal-      .invoke state_matrix   = CreateStateEventMatrixTable( sm_sm )
+.// SKB o2m removal-      .invoke action_array   = CreateStateActionArray( te_c, sm_sm )
+.// SKB o2m removal-      .invoke xaction_array  = CreateTransitionActionArray( sm_sm )
+.// SKB o2m removal-      .invoke dispatcher     = CreateClassBasedStateModelEventDispatcher( te_c, o_obj, gen_declaration )
+.// SKB o2m removal-${state_matrix.body}\
+.// SKB o2m removal-${action_array.body}\
+.// SKB o2m removal-${xaction_array.body}\
+.// SKB o2m removal-${dispatcher.body}\
+.// SKB o2m removal-    .end if
+.// SKB o2m removal-  .end if
+.// SKB o2m removal-  .if ( not_empty sm_ism )
+.// SKB o2m removal-    .select one sm_sm related by sm_ism->SM_SM[R517]
+.// SKB o2m removal-    .invoke ievents = CreateInstanceStateModelEvents( o_obj, sm_sm, gen_declaration )
 
-${ievents.body}\
-    .if ( gen_declaration )
-      .invoke state_numbers = GetStateEnumsFromStateSet( sm_sm )
-      .invoke event_numbers = CreateStateModelEventEnum( sm_sm )
-${state_numbers.body}\
-${event_numbers.body}\
-    .else
-      .invoke state_matrix = CreateStateEventMatrixTable( sm_sm )
-      .invoke action_array = CreateStateActionArray( te_c, sm_sm )
-      .invoke xaction_array  = CreateTransitionActionArray( sm_sm )
-${state_matrix.body}\
-${action_array.body}\
-${xaction_array.body}\
-    .end if  .// gen_declaration
-    .invoke dispatcher = CreateInstanceStateModelEventDispatcher( te_c, o_obj, gen_declaration )
-${dispatcher.body}\
-    .invoke poly_crackers = AddSuperTypePolymorphicEventHandlers( o_obj, gen_declaration )
-${poly_crackers.body}\
-  .end if
-${mda.body}\
-${file_epilogue.body}
+.// SKB o2m removal-${ievents.body}\
+.// SKB o2m removal-    .if ( gen_declaration )
+.// SKB o2m removal-      .invoke state_numbers = GetStateEnumsFromStateSet( sm_sm )
+.// SKB o2m removal-      .invoke event_numbers = CreateStateModelEventEnum( sm_sm )
+.// SKB o2m removal-${state_numbers.body}\
+.// SKB o2m removal-${event_numbers.body}\
+.// SKB o2m removal-    .else
+.// SKB o2m removal-      .invoke state_matrix = CreateStateEventMatrixTable( sm_sm )
+.// SKB o2m removal-      .invoke action_array = CreateStateActionArray( te_c, sm_sm )
+.// SKB o2m removal-      .invoke xaction_array  = CreateTransitionActionArray( sm_sm )
+.// SKB o2m removal-${state_matrix.body}\
+.// SKB o2m removal-${action_array.body}\
+.// SKB o2m removal-${xaction_array.body}\
+.// SKB o2m removal-    .end if  .// gen_declaration
+.// SKB o2m removal-    .invoke dispatcher = CreateInstanceStateModelEventDispatcher( te_c, o_obj, gen_declaration )
+.// SKB o2m removal-${dispatcher.body}\
+.// SKB o2m removal-    .invoke poly_crackers = AddSuperTypePolymorphicEventHandlers( o_obj, gen_declaration )
+.// SKB o2m removal-${poly_crackers.body}\
+.// SKB o2m removal-  .end if
+.// SKB o2m removal-${mda.body}\
+.// SKB o2m removal-${file_epilogue.body}
   .// Deallocate relationship storage.
   .invoke FiniRelStorageFragment( te_relstore )
 .end function
