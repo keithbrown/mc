@@ -14,9 +14,9 @@
 .end if
 .for each te_class in te_classes
   .// Generate declaration implementation file.
-  .invoke implementation = CreateObjectImplementation( te_class, te_c, true )
-${implementation.body}
-  .emit to file "${te_file.domain_include_path}/${te_class.class_file}.${te_file.hdr_file_ext}"
+.// SKB o2m removal  .invoke implementation = CreateObjectImplementation( te_class, te_c, true )
+.// SKB o2m removal${implementation.body}
+.// SKB o2m removal  .emit to file "${te_file.domain_include_path}/${te_class.class_file}.${te_file.hdr_file_ext}"
   .//
   .// Generate definition implementation.
   .invoke implementation = CreateObjectImplementation( te_class, te_c, false )

@@ -211,11 +211,11 @@
   .include "${te_file.arc_path}/t.sys_persist.c"
   .emit to file "${te_file.system_source_path}/${te_file.persist}.${te_file.src_file_ext}"
   .//
-  .include "${te_file.arc_path}/t.sys_persist.h"
-  .emit to file "${te_file.system_include_path}/${te_file.persist}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-  .include "${te_file.arc_path}/t.sys_persist.h"
+.// SKB o2m removal-  .emit to file "${te_file.system_include_path}/${te_file.persist}.${te_file.hdr_file_ext}"
   .//
-  .include "${te_file.arc_path}/t.sys_nvs.h"
-  .emit to file "${te_file.system_include_path}/${te_file.nvs}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-  .include "${te_file.arc_path}/t.sys_nvs.h"
+.// SKB o2m removal-  .emit to file "${te_file.system_include_path}/${te_file.nvs}.${te_file.hdr_file_ext}"
   .//
   .include "${te_file.arc_path}/t.sys_nvs.c"
   .emit to file "${te_file.system_include_path}/${te_file.nvs}.${te_file.src_file_ext}"
@@ -243,8 +243,8 @@
   .//===========================================================================
   .// Generate sys_ilb.h into system gen includes.
   .//===========================================================================
-  .include "${te_file.arc_path}/t.sys_ilb.h"
-  .emit to file "${te_file.system_include_path}/${te_file.ilb}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-  .include "${te_file.arc_path}/t.sys_ilb.h"
+.// SKB o2m removal-  .emit to file "${te_file.system_include_path}/${te_file.ilb}.${te_file.hdr_file_ext}"
   .//
   .//===========================================================================
   .// Generate sys_ilb.c into system gen source.
@@ -256,8 +256,8 @@
 .//=============================================================================
 .// Generate sys_factory.h into system gen includes.
 .//=============================================================================
-.include "${te_file.arc_path}/t.sys_factory.h"
-.emit to file "${te_file.system_include_path}/${te_file.factory}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_factory.h"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.factory}.${te_file.hdr_file_ext}"
 .//
 .if ( not_empty te_cs )
 .//=============================================================================
@@ -289,49 +289,49 @@
 .select many te_cs from instances of TE_C where ( selected.included_in_build )
 .invoke r = UserSuppliedDataTypeIncludes()
 .assign te_typemap.user_supplied_data_types = r.result
-.include "${te_file.arc_path}/t.sys_types.h"
-.emit to file "${te_file.system_include_path}/${te_file.types}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_types.h"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.types}.${te_file.hdr_file_ext}"
 .//
 .//=============================================================================
 .// Generate sys_user_co.h into include directory.
 .//=============================================================================
-.include "${te_file.arc_path}/t.sys_user_co.h"
-.emit to file "${te_file.system_include_path}/${te_file.callout}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_user_co.h"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.callout}.${te_file.hdr_file_ext}"
 .//
 .//=============================================================================
 .// Generate sys_user_co.c into source directory.
 .//=============================================================================
-.include "${te_file.arc_path}/t.sys_user_co.c"
-.emit to file "${te_file.system_include_path}/${te_file.callout}.${te_file.src_file_ext}"
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_user_co.c"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.callout}.${te_file.src_file_ext}"
 .//
 .//=============================================================================
 .// Generate TIM_bridge.h into system include.
 .//=============================================================================
-.if ( not_empty tim_te_ee )
-.include "${te_file.arc_path}/t.sys_tim.h"
-.emit to file "${te_file.system_include_path}/${te_file.tim}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.if ( not_empty tim_te_ee )
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_tim.h"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.tim}.${te_file.hdr_file_ext}"
 .//
 .//=============================================================================
 .// Generate TIM_bridge.c to system source directory.
 .//=============================================================================
-.include "${te_file.arc_path}/t.sys_tim.c"
-.emit to file "${te_file.system_include_path}/${te_file.tim}.${te_file.src_file_ext}"
-.end if
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_tim.c"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.tim}.${te_file.src_file_ext}"
+.// SKB o2m removal-.end if
 .//
 .//=============================================================================
 .// Generate sys_xtumlload.h into system gen includes.
 .//=============================================================================
-.if ( te_sys.InstanceLoading )
-.include "${te_file.arc_path}/t.sys_xtumlload.h"
-.emit to file "${te_file.system_include_path}/${te_file.xtumlload}.${te_file.hdr_file_ext}"
-.end if
+.// SKB o2m removal-.if ( te_sys.InstanceLoading )
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_xtumlload.h"
+.// SKB o2m removal-.emit to file "${te_file.system_include_path}/${te_file.xtumlload}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.end if
 .//
 .//=============================================================================
 .// Generate sys_xtumlload.c into system gen source.
 .//=============================================================================
-.if ( te_sys.InstanceLoading )
-.include "${te_file.arc_path}/t.sys_xtumlload.c"
-.emit to file "${te_file.system_source_path}/${te_file.xtumlload}.${te_file.src_file_ext}"
-.end if
+.// SKB o2m removal-.if ( te_sys.InstanceLoading )
+.// SKB o2m removal-.include "${te_file.arc_path}/t.sys_xtumlload.c"
+.// SKB o2m removal-.emit to file "${te_file.system_source_path}/${te_file.xtumlload}.${te_file.src_file_ext}"
+.// SKB o2m removal-.end if
 .print "ending ${info.date}"
 .//

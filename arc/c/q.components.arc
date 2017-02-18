@@ -20,14 +20,14 @@
   .// ports
   .// messages
   .select many te_pos related by te_c->TE_PO[R2005]
-  .for each te_po in te_pos
-    .// Get the first te_mact(s) in the port.
-    .select many te_macts related by te_po->TE_MACT[R2006] where ( selected.Order == 0 )
-    .invoke s = TE_MACT_CreateDeclarations( te_macts )
-    .assign message_declarations = message_declarations + s.body
-  .end for
-  .include "${arc_path}/t.component.module.h"
-  .emit to file "${te_file.system_include_path}/${te_c.module_file}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-  .for each te_po in te_pos
+.// SKB o2m removal-    .// Get the first te_mact(s) in the port.
+.// SKB o2m removal-    .select many te_macts related by te_po->TE_MACT[R2006] where ( selected.Order == 0 )
+.// SKB o2m removal-    .invoke s = TE_MACT_CreateDeclarations( te_macts )
+.// SKB o2m removal-    .assign message_declarations = message_declarations + s.body
+.// SKB o2m removal-  .end for
+.// SKB o2m removal-  .include "${arc_path}/t.component.module.h"
+.// SKB o2m removal-  .emit to file "${te_file.system_include_path}/${te_c.module_file}.${te_file.hdr_file_ext}"
   .//
   .for each te_po in te_pos
     .// Get the first te_mact(s) in the port.
@@ -67,11 +67,11 @@
   .assign instance_dumpers = ""
   .assign class_info_init = ""
   .if ( te_c.internal_behavior )
-    .invoke class_type_identifiers = CreateClassIdentifierFile( te_c, te_sync )
-    .assign instance_dumpers = class_type_identifiers.instance_dumpers
-    .assign class_info_init = class_type_identifiers.class_info_init
-${class_type_identifiers.body}
-    .emit to file "${te_file.domain_include_path}/${te_c.classes_file}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-    .invoke class_type_identifiers = CreateClassIdentifierFile( te_c, te_sync )
+.// SKB o2m removal-    .assign instance_dumpers = class_type_identifiers.instance_dumpers
+.// SKB o2m removal-    .assign class_info_init = class_type_identifiers.class_info_init
+.// SKB o2m removal-${class_type_identifiers.body}
+.// SKB o2m removal-    .emit to file "${te_file.domain_include_path}/${te_c.classes_file}.${te_file.hdr_file_ext}"
     .// functions
     .if ( not_empty te_sync )
       .invoke r = CreateSynchronousServiceClassDefinition( te_c, te_sync )
@@ -94,8 +94,8 @@ ${class_type_identifiers.body}
 .// ISR/TLM/AUTOSAR/SVX
 .// AUTOSAR VFB functions
 .include "${te_file.arc_path}/q.autosar.vfb_functions.arc"
-.if ( te_sys.SystemCPortsType == "TLM" )
-  .include "${te_file.arc_path}/t.component.regdefs.h"
-  .emit to file "${te_file.system_source_path}/${te_file.registers}.${te_file.hdr_file_ext}"
-.end if
+.// SKB o2m removal-.if ( te_sys.SystemCPortsType == "TLM" )
+.// SKB o2m removal-  .include "${te_file.arc_path}/t.component.regdefs.h"
+.// SKB o2m removal-  .emit to file "${te_file.system_source_path}/${te_file.registers}.${te_file.hdr_file_ext}"
+.// SKB o2m removal-.end if
 .// registers/memory
