@@ -36,7 +36,7 @@ for arg in $@; do
 done
 
 # check if we have any project to convert
-if [[ $WKSP_PATH == "" || $PROJECT == "" ]]; then
+if [[ ! -e $WKSP_PATH || $PROJECT == "" ]]; then
     print_usage
     exit 1
 fi
@@ -47,13 +47,48 @@ if [[ $PROJECT != "" ]]; then
     echo "Converting OAL to MASL for project $PROJECT"
 
     # Move mcmc to mcmc.no
-    # Move special arc folder into place
+    if [[ -e $DIR/mcmc ]]; then
+        mv $DIR/mcmc $DIR/mcmc.no
+        if [[ ! -e $DIR/mcmc.no ]]; then
+            echo -e "Failed to configure the OAL-to-MASL model compilation. Exiting.\n"
+            exit 2
+        fi
+    fi
 
+    # Move special arc folder into place
+    O2M_ARCDIR=$DIR/../arc-o2m
+    STD_ARCDIR=$DIR/../arc
+    TMP_ARCDIR=$DIR/../arc-orig
+    if [[ -e $O2M_ARCDIR ]]; then
+        mv $STD_ARCDIR $TMP_ARCDIR
+        if [[ ! -e $TMP_ARCDIR ]]; then
+            echo -e "Failed to configure the OAL-to-MASL archetypes. Exiting.\n"
+            exit 2
+        fi
+        mv $O2M_ARCDIR $STD_ARCDIR
+        if [[ ! -e $STD_ARCDIR ]]; then
+            echo -e "Failed to put the OAL-to-MASL archetypes into place. Exiting.\n"
+            exit 2
+        fi
+    else
+        echo -e "Could not find the OAL-to-MASL archetypes. Exiting.\n"
+        exit 2
+    fi
+
+    # Run the build to generate MASL into the project src
+    echo -e "Generating MASL into $WORKSPACE/$PROJECT/src."
     CLI.sh Build -project $PROJECT 
 
     # Move mcmc.no to mcmc
-    # Move special arc folder back out of the way
+    if [[ -e $DIR/mcmc.no ]]; then
+        mv $DIR/mcmc.no $DIR/mcmc
+    fi
 
+    # Move special arc folder back out of the way
+    if [[ -e $TMP_ARCDIR ]]; then
+        mv $STD_ARCDIR $O2M_ARCDIR
+        mv $TMP_ARCDIR $STD_ARCDIR
+    fi
 fi
 
 echo -e "\n"
