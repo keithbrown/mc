@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="github-pandoc.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="oal2masl">oal2masl</h1>
+<p>This command line tool converts the OAL action language in an xtUML project into MASL<br />
+action language. The tool is distributed as an add-on package that requires an existing<br />
+BridgePoint installation. It should also be noted that the user must have write access<br />
+inside the BridgePoint installation folder in order to run this tool.</p>
+<h2 id="setup">Setup</h2>
+<ol>
+<li><a href="https://s3.amazonaws.com/xtuml-releases/engineering-deliveries/OAL2MASL/oal2masl.zip">Download the add-on package</a><br />
+</li>
+<li>Extract the <code>oal2masl.zip</code> file inside <code>&lt;BridgePoint installation&gt;/tools/mc/</code><br />
+</li>
+<li>You are now ready to run the tool <code>&lt;BridgePoint installation&gt;/tools/mc/bin/oal2masl</code></li>
+</ol>
+<h2 id="syntax">Syntax</h2>
+<pre><code>oal2masl -w &lt;workspace directory&gt; -p &lt;project name&gt; </code></pre>
+<table style="width:88%;">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>-w &lt;workspace directory&gt;</td>
+<td>Specify an absolute directory path to an eclipse workspace</td>
+</tr>
+<tr class="even">
+<td>-p &lt;project name&gt;</td>
+<td>Specify the name of the project inside the given workspace</td>
+</tr>
+</tbody>
+</table>
+<h2 id="notes">Notes</h2>
+<ul>
+<li>The tool is located in the subdirectory <code>&lt;BridgePoint Home&gt;/tools/mc/bin</code></li>
+<li>Output is put into the <code>src/</code> folder under the specified project</li>
+<li>Progress and error messages are reported to stderr</li>
+<li>Invoking the tool with missing parameters or syntax errors produces a message indicating proper usage</li>
+</ul>
+<h2 id="example">Example</h2>
+<pre><code>$ cd /opt/xtuml/BridgePoint/tools/mc/bin
+$ oal2masl -w /home/user/workspace1/ -p IPLink</code></pre>
+</body>
+</html>
