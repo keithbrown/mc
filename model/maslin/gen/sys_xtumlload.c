@@ -7,9 +7,9 @@
  * your copyright statement can go here (from te_copyright.body)
  *--------------------------------------------------------------------------*/
 
-#include "maslout_sys_types.h"
+#include "maslin_sys_types.h"
 #include "sys_xtumlload.h"
-#include "xtuml2masl_classes.h"
+#include "masl2xtuml_classes.h"
 #include <ftw.h>
 
 typedef Escher_UniqueID_t (*LoadInstance_t)( Escher_iHandle_t, const c_t * [] );
@@ -21,7 +21,7 @@ typedef struct {
 } Escher_instance_loader_info_t;
 
 Escher_instance_loader_info_t class_string_2_class_number[] = {
-  xtuml2masl_instance_loaders,
+  masl2xtuml_instance_loaders,
 };
 
 static Escher_ClassNumber_t lookupclassloader( const c_t * );
@@ -49,7 +49,7 @@ static void Escher_load_instance(
   /* Look up the class number and instance loader using the key letters.  */
   n = lookupclassloader( wordvalues[ 0 ] );
 
-  if ( n < 0 + xtuml2masl_MAX_CLASS_NUMBERS ) {
+  if ( n < 0 + masl2xtuml_MAX_CLASS_NUMBERS ) {
     /* Invoke the creation function using the class number.  */
     instance = Escher_CreateInstance( 0, class_string_2_class_number[n].class_number );
 
@@ -165,11 +165,11 @@ int Escher_xtUML_load(
 {
   Escher_ClassNumber_t i;
   /* Load from stdin and then recursively load from a named directory.  */
-  int rc = Escher_xtUML_load_file( 0, 0, 0 );
+  int rc = 0; //Escher_xtUML_load_file( 0, 0, 0 );
   if ( 0 != argv[2] ) {
     rc = ftw( argv[2], Escher_xtUML_load_file, 15 );
   }
-  for ( i = 0; i < 0 + xtuml2masl_MAX_CLASS_NUMBERS; i++ ) {
+  for ( i = 0; i < 0 + masl2xtuml_MAX_CLASS_NUMBERS; i++ ) {
     Escher_batch_relate( 0, i );
   }
   return rc;
@@ -398,8 +398,8 @@ static void whitespace( void )
 /*
    MASL Activity Container Parser Grammar
 
-   activity_file:  container*
-   container:
+   activity_file:  activity_container*
+   activity_container:
      activity_begin ( uuid )+ do_not_edit
      signature
      code_block
@@ -407,7 +407,7 @@ static void whitespace( void )
 */
 
 static bool readcontainer( char ** );
-static bool container( void );
+static bool activity_container( void );
 static bool activity_begin( void );
 static bool uuid( void );
 static bool do_not_edit( void );
@@ -446,9 +446,9 @@ static bool readcontainer( char ** c )
   return last_container;
 }
 
-static bool container( void )
+static bool activity_container( void )
 {
-  DEVELOPER_DEBUG( "container %s\n", cursor );
+  DEVELOPER_DEBUG( "activity_container %s\n", cursor );
   word[ 0 ] = "";
   wordindex = 0;
   if ( ! activity_begin() ) return false;
@@ -560,13 +560,13 @@ static int Escher_MASL_load_file( const char * filepath, const struct stat * inf
   bool done = readcontainer( &cursor ); /* Initial call reads to beginning of first record.  */
   while ( ! done ) {
     done = readcontainer( &cursor );
-    if ( container() ) {
+    if ( activity_container() ) {
       if ( 0 != wordindex ) {
         // Update the Action_Semantics with the code blocks.
         if ( wordindex > 2 ) {
-          xtuml2masl_load_activity_code_block( (c_t *) word[ 2 ], Escher_uuidtou128( word[ 0 ] ), Escher_uuidtou128( word[ 1 ] ) );
+          masl2xtuml_load_activity_code_block( (c_t *) word[ 2 ], Escher_uuidtou128( word[ 0 ] ), Escher_uuidtou128( word[ 1 ] ) );
         } else {
-          xtuml2masl_load_activity_code_block( (c_t *) word[ 1 ], Escher_uuidtou128( word[ 0 ] ), 0 );
+          masl2xtuml_load_activity_code_block( (c_t *) word[ 1 ], Escher_uuidtou128( word[ 0 ] ), 0 );
         }
       }
     } else {
